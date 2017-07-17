@@ -1,6 +1,6 @@
 ###################################
 ##
-## Pre-built functions
+## Functions for phasingPipeline_Links_all.R
 ##
 ##################################
 
