@@ -60,52 +60,87 @@ while(T) { # haplopytes along the list
 
 ##-----------
 #--------
-subsettingByQuality_computingHQLinks <- function(genotypeMatrix) { #it takes the geno M filtered for those variants with > minHQCells 
-  #takes the GLOBAL variables: minNbCells, output, linksOutput
+#######################
+##
+## New function Aug 8 2017
+##
+#######################
+computingLinks <- function(tmpSite, listOfVar, HQ_genotypeMatrix, outFileName) { #it takes the geno M filtered for those variants with > minHQCells 
+  #takes the GLOBAL variables: minNbCells, chr
   #it does not return anything, it rather creates a file with all links following the qual. conditions
   
-  HQ_genotypeMatrix <- genotypeMatrix
-  count_var_x <- 1
-  count_var_y <- 2
   nbWindows <- 0
+  tmpSiteIndex <- which(listOfVar == tmpSite)
+  count_var_y <- tmpSiteIndex+1
+  tmp_df_links <- list()
   
-  
-  while (count_var_x < nrow(HQ_genotypeMatrix)) {
+  while (count_var_y <= nrow(HQ_genotypeMatrix)) {
     
-    count_var_y <- count_var_x+1
-    while (count_var_y <= nrow(HQ_genotypeMatrix)) {
+    tmp <- HQ_genotypeMatrix[c(tmpSiteIndex,count_var_y),]
+    
+    col_i <- c()
+    indexToTake <- as.vector(which(apply(tmp, 2, function(x) { col_i <- c(col_i, sum(is.na(x))) }) == 0))
+    print(paste("Nb of overlapping cells:", length(indexToTake)))
+    
+    if (length(indexToTake) >= minNbCells) {
       
-      tmp <- HQ_genotypeMatrix[c(count_var_x,count_var_y),]
-      col_i <- c()
-      indexToTake <- as.vector(which(apply(tmp, 2, function(x) { col_i <- c(col_i, sum(is.na(x))) }) == 0))
-      print(paste("Nb of overlapping cells:", length(indexToTake)))
-      if (length(indexToTake) >= minNbCells) {
-        
-        tmp <- tmp[,indexToTake]
-        v_countLinks <- apply(vapply(1:ncol(tmp), FUN = get_LinkCount, FUN.VALUE = rep(0,4)), 1, sum)
-        print(v_countLinks)
-        
-        l <- order(v_countLinks, decreasing = T)
-        
-        ratio <- v_countLinks[l[2]]/5
-        
-        #if (v_countLinks[l[1]] >= minNbLinks & v_countLinks[l[2]] >= minNbLinks & v_countLinks[l[3]] < ratio) {
-        
-        cat("Link found", file=output, sep="\n", append = T)
-        nbWindows <- nbWindows+1
-        cat(paste("Link nb:", nbWindows, sep=" "), file=output, sep="\n", append=T)
-        cat(paste("Two SNP window:", varNames[count_var_x], "|", varNames[count_var_y], sep=" "), file=output, sep="\n", append = T)
-        
-        cat(paste("chr15", varNames[count_var_x], varNames[count_var_y], paste("0/0/", v_countLinks[1], sep =""), paste("0/1/", v_countLinks[2], sep =""), paste("1/0/", v_countLinks[3], sep =""), paste("1/1/", v_countLinks[4], sep =""), collapse ="\t"), file=linksOutput, sep="\n", append=T)
-      }
-      count_var_y <- count_var_y+1
-    }
-    count_var_x <- count_var_x+1
-    
+      
+      tmp_sub <- tmp[,indexToTake]
+      v_countLinks <- apply(vapply(1:ncol(tmp_sub), get_LinkCount, tmp=tmp_sub, FUN.VALUE = rep(0,4)), 1, sum)
+      print(listOfVar[count_var_y])
+      
+      cat("Link found", file=outFileName, sep="\n", append = T)
+      nbWindows <- nbWindows+1
+      cat(paste("Link nb:", nbWindows, sep=" "), file=outFileName, sep="\n", append=T)
+      cat(paste("Two SNP window:", listOfVar[tmpSiteIndex], "|", listOfVar[count_var_y], sep=" "), file=outFileName, sep="\n", append = T)
+      
+      tmp_df_links[[nbWindows]] <- c(chr, tmpSite, listOfVar[count_var_y], v_countLinks[1], v_countLinks[2], v_countLinks[3], v_countLinks[4])
+      
+    } 
+    count_var_y <- count_var_y+1
   }
+  if (length(tmp_df_links) > 0) {
+    
+    HQlinks_df <- data.frame(matrix(unlist(tmp_df_links), ncol=7, byrow = T))
+    names(HQlinks_df) <- c("chrNb","PosOne", "PosTwo", "0/0", "0/1", "1/0", "1/1")
+  } else {
+    HQlinks_df <- 0
+  }
+  return(HQlinks_df)
+}
+##---------
+#------
+#subsets links matrix according to QC we specify
+subsettingLinksMatrix <- function(PC_tbl) { #local variable: PC_tbl = matrix with HQ link; global variables: 1)HQ_ratio, 2) minNbLinks; FUNCTIONS: 1) countingHetLinks.
   
+  #PC_tbl <- fullHQlinksComb
+  #keep pwise Comb with link counts > minNbLinks
+  linksM <- lapply(1:nrow(PC_tbl[,4:7]), function(x) { which(as.numeric(as.matrix(PC_tbl[x,4:7])) >= minNbLinks) })
+  vvv <- which(unlist(lapply(linksM, FUN=length)) == 2) #vector containing those positions with two most prevalent links
+  
+  #write.table(kkk[vvv,], file="clean_AD393.chr15.pairwiseComb.phase2.txt", quote = F, row.names = F, col.names = F)
+  
+  #subsetting the original table with pwise Comb counts
+  matrix_counts_links_ltTWO <- PC_tbl[vvv,]
+  
+  #computing a table with the link count order 2,3,4,1 means that the hights nb of counts if in column 2 and 3
+  order_m <- t(apply(matrix_counts_links_ltTWO[,4:7],1, function(o) { order(o, decreasing = T) })) #order of the most prevalent links among sites in vvv
+  #getting the row indexes compatible with SNP het status
+  tmpOneColHet <- countingHetLinks(order_m)
+  tmpTwoColHet <- which(lapply(1:nrow(matrix_counts_links_ltTWO), function(x) { sum(as.numeric(as.matrix(matrix_counts_links_ltTWO[x,order_m[x,1:2]+3]))) > HQ_ratio*sum(as.numeric(as.matrix(matrix_counts_links_ltTWO[x,order_m[x,3:4]+3]))) }) == T)
+  colHet <- intersect(tmpOneColHet,tmpTwoColHet)
+  
+  #building the m_hap matrix, it includes all the haplotypes that and needs to be clean to rm duplicates and merge overlapping haplotypes
+  subMatrix <- matrix_counts_links_ltTWO[colHet,]
+  #match(sort(subMatrix[1,3:6], decreasing=T), subMatrix[1,3:6])
+  subOrder <- order_m[colHet,]
+  
+  return(list(subMatrix, subOrder))
   
 }
+##--------------------
+#--------------
+
 ##--------------------
 #--------------
 #this function takes the HQ filtered matrix with the link counts order and 
@@ -134,6 +169,16 @@ countingHetLinks <- function(linkCountM) { #it takes the order matrix and it ret
   } 
   return(colHet)
 }
+##------------------
+#------------
+#converts all the elements of the list in the same format
+creatingHapList <- function(nbHap) {
+  tmpM <- rbind( as.numeric(hapList[[nbHap]][1,]),  as.numeric(hapList[[nbHap]][2,]))
+  colnames(tmpM) <- colnames(hapList[[nbHap]])
+  
+  return(tmpM)
+}
+
 ##--------------------
 #--------------
 
@@ -403,52 +448,39 @@ computePCshownByMoreThanXCells <- function(m) { #m is the matrix with the counts
 }
 ##-------------------
 
-subsettingByQuality_computingLQLinks <- function(outFName) {
+##-------------------
+#--------------
+#computed the pairwise combinations for a given LQ var and all the var in the HQ haplotypes
+subsettingByQuality_computingLQLinks <- function(tmpLQSite, varNamesInHQhaps) {
+  #GLOBAL variables: openGenoq, openGeno, varNames, outputLQPhasing, minHQCells
+  #calls functions: computingLinks
   
-  
-  cat(paste("PosOne", "PosTwo", "0/0", "0/1", "1/0", "1/1", sep="\t"), file=outFName, sep="")
-  varNb <- 1
-  
-  while(varNb<length(hetSNPsPos)) { #######CHANGE HERE
+  if (!is.element(tmpLQSite, varNamesInHQhaps)) {
     
-    #varNb <- 1
+    # tmpLQSite <- hetSNPsPos[1]
+    # varNamesInHQhaps <- varInHQhaps
     
-    if (!is.element(hetSNPsPos[varNb], colnames(matrixSortedHap))) {
-      
-      
-      subGenoQ <- openGenoq[match(c(hetSNPsPos[varNb],colnames(matrixSortedHap)), varNames),]
-      subGeno <- openGeno[match(c(hetSNPsPos[varNb],colnames(matrixSortedHap)), varNames),]
-      indexHQ <- lapply(1:nrow(subGenoQ), function(x) { which(subGenoQ[x,] > 20 )})
-      
-      df_countLinks <- list()
-      countComparisons <- 2
-      countLinks <- 0
-      
-      while(countComparisons <= nrow(subGeno)) {
-        
-        print(countComparisons)
-        interSectVar <- intersect(indexHQ[[1]], indexHQ[[countComparisons]])
-        if (length(interSectVar) >= 4) {
-          
-          countLinks <- countLinks+1     
-          tmp <- subGeno[c(1,countComparisons),interSectVar]
-          tmpLinks <- apply(vapply(1:ncol(tmp), FUN = get_LinkCount, FUN.VALUE = rep(0,4)), 1, sum)
-          
-          df_countLinks[[countLinks]] <- matrix(cbind(as.numeric(hetSNPsPos[varNb]),as.numeric(colnames(matrixSortedHap)[(countComparisons-1)]),matrix(tmpLinks, ncol=4)), ncol=6)
-        }
-        countComparisons <- countComparisons+1
-        
-      }
-      
-      write.table(matrix(unlist(df_countLinks), ncol=6, byrow = T), file=outFName, append = T, quote = F, row.names = F, col.names = F, sep="\t")
-      varNb <- varNb+1
-    } else {
-      
-      varNb <- varNb+1
-      
-      
-    } 
-  }
+    LQvarNames <- c(tmpLQSite,varNamesInHQhaps)
+    overlappingSites <- intersect(LQvarNames, varNames)
+    
+    subGenoQ <- openGenoq[match(overlappingSites, varNames),]
+    subGeno <- openGeno[match(overlappingSites, varNames),]
+    indexHQ <- apply(subGenoQ, 1, function(x) { length(which(x > 20))})
+    
+    sub_LQvarNames <- LQvarNames[which(indexHQ >= minHQCells)]
+    tmp_geno <- subGeno[which(indexHQ >= minHQCells),]
+    
+    tmpLQvar_HQvar <- computingLinks(tmpLQSite, sub_LQvarNames, tmp_geno, outputLQPhasing)
+    
+    
+    
+  } else {
+    
+    tmpLQvar_HQvar <- 0
+    
+    
+  } 
+  return(tmpLQvar_HQvar)
 }
 ##---------------------
 #--------------
