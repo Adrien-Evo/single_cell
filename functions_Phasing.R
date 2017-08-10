@@ -645,7 +645,7 @@ creatingLQhaplotypes <- function(LQVarCoord) {
 
 
 #######################
-## NEW FUNCTIONS - july 31 2017
+## NEW FUNCTIONS - Aug 10 2017
 ##
 #######################
 #this function takes the subMatrix following QC and generates the possible haplotypes between a provided LQ variant and all the possible
@@ -657,7 +657,7 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
   #LQVarCoord <- "22764314"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
   #overlappingHap is a vector of the length of the hapList and the numbers represent the nb of sites with links information in the LQ matrix
-  overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,1] == LQVarCoord),2], colnames(hapList[[x]]))) }))
+  overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,2] == LQVarCoord),3], colnames(hapList[[x]]))) }))
   indexOverlappingHap <-  which(overlappingHap >= 2) #note before was >=
   print(length(indexOverlappingHap))
   
@@ -672,9 +672,9 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
     for (hapNb in indexOverlappingHap) {
       
       #subsetting the subMatrix per LQ variant
-      perHQhap_NewLQPos_m <- subMatrix[intersect(which(subMatrix[,1] == LQVarCoord),which(subMatrix[,2] %in% as.numeric(colnames(hapList[[hapNb]])))),]
+      perHQhap_NewLQPos_m <- subMatrix[intersect(which(subMatrix[,2] == LQVarCoord), which(subMatrix[,3] %in% as.numeric(colnames(hapList[[hapNb]])))),]
       #subsetting the matrix with the links' order
-      perHQhap_NewLQPos_order_m <- subOrder[intersect(which(subMatrix[,1] == LQVarCoord),which(subMatrix[,2] %in% as.numeric(colnames(hapList[[hapNb]])))),]
+      perHQhap_NewLQPos_order_m <- subOrder[intersect(which(subMatrix[,2] == LQVarCoord),which(subMatrix[,3] %in% as.numeric(colnames(hapList[[hapNb]])))),]
       vectorList <- list()
       
       
@@ -687,12 +687,12 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
         if (is.element(1, linkSupported) & is.element(4, linkSupported)) {
           
           vectorList[[col]] <- rbind(c(0,0),c(1,1))
-          colnames(vectorList[[col]]) <- c(perHQhap_NewLQPos_m[col,1], perHQhap_NewLQPos_m[col,2])
+          colnames(vectorList[[col]]) <- c(as.character(perHQhap_NewLQPos_m[col,2]), as.character(perHQhap_NewLQPos_m[col,3]))
           
         } else if (is.element(2, linkSupported) & is.element(3, linkSupported)) {
           
           vectorList[[col]] <- rbind(c(0,1),c(1,0))
-          colnames(vectorList[[col]]) <- c(perHQhap_NewLQPos_m[col,1], perHQhap_NewLQPos_m[col,2])
+          colnames(vectorList[[col]]) <- c(as.character(perHQhap_NewLQPos_m[col,2]), as.character(perHQhap_NewLQPos_m[col,3]))
           
         }
         
@@ -735,7 +735,7 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
     
     #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
     #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
-    if (LQhapQC == "loose" & (sum(overlappingHap[indexOverlappingHap]) >= 5)) {
+    if (sum(overlappingHap[indexOverlappingHap]) >= 5) {
       if ((sum(corrPC_one)/sum(overlappingHap[indexOverlappingHap]) == 1) & (sum(corrPC_one) == sum(corrPC_two))) {
         
         finalHapMerged_Ordered <- list()
