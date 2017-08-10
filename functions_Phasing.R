@@ -804,14 +804,10 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
         listDoubleHaps <- 0
         return(listDoubleHaps)
       }
-    } else if (LQhapQC == "restricted") {
       
-      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-      listDoubleHaps <- 0
-      return(listDoubleHaps)
     } else {
       
-      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: haplotypes differ.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
       listDoubleHaps <- 0
       return(listDoubleHaps)
       
