@@ -172,12 +172,13 @@ countingHetLinks <- function(linkCountM) { #it takes the order matrix and it ret
 ##------------------
 #------------
 #converts all the elements of the list in the same format
-creatingHapList <- function(nbHap) {
-  tmpM <- rbind( as.numeric(hapList[[nbHap]][1,]),  as.numeric(hapList[[nbHap]][2,]))
-  colnames(tmpM) <- colnames(hapList[[nbHap]])
+creatingHapList <- function(nbHap, listOfHaplotypes) {
+  tmpM <- rbind( as.numeric(listOfHaplotypes[[nbHap]][1,]),  as.numeric(listOfHaplotypes[[nbHap]][2,]))
+  colnames(tmpM) <- colnames(listOfHaplotypes[[nbHap]])
   
   return(tmpM)
 }
+
 
 ##--------------------
 #--------------
