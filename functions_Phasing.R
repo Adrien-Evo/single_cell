@@ -185,13 +185,15 @@ creatingHapList <- function(nbHap) {
 #creating a matrix with all overlapping haps 
 creatingHapMatrixFromLinkCountMatrix <- function(linkCountM_subset, orderLinkCountM_subset) { #it takes subMatrix and subOrder and return a matrix with all haplotypes
   
+  
+  
   nrow(linkCountM_subset)
-  names_subM <- sort(union(linkCountM_subset[,1],linkCountM_subset[,2]))
+  names_subM <- sort(as.numeric(union(linkCountM_subset[,2],linkCountM_subset[,3])))
   
   for (col in 1:nrow(linkCountM_subset)) {
     
-    focalPosFirst <- linkCountM_subset[col,1]
-    focalPosSec <- linkCountM_subset[col,2]
+    focalPosFirst <- linkCountM_subset[col,2]
+    focalPosSec <- linkCountM_subset[col,3]
     linkSupported <- orderLinkCountM_subset[col,][1:2]
     vectorHap_one <- rep(NA, length(names_subM))
     vectorHap_two <- rep(NA, length(names_subM))
