@@ -26,40 +26,78 @@ convertingIntoMatrix <- function(l, l_names) { #l = hapList; l_names=namesHapLis
 ##--------------
 #------------
 
-#goes around the hap list until they are all merged and not more sites belong to two alternative chunks
-excludingDuplicates <- function(tmpUniqueHapList) {
+#########################
+##
+## New excludingDuplicates - aug 17, 2017
+##
+#########################
+#it takes a list check the names of all  the elements and see whether there are duplicated names.
+#if yes, it means two haplotypes can be merged. 
+#it merges the overlapping haplotypes and removed them from the list
+#it repeats the process until there are no more duplicated sites in the list. 
+excludingDuplicates <- function(l) { #takes as FUNCTIONS: creatingHapList, namesHapListFunction, mergingHaplotypes
   
-  #tmpUniqueHapList <- unique_h_list
-  #tmpUniqueHapList <- newHap
-  countDupList <- 1
+  l_newHapList_tmp <- l
   
+  #l_newHapList_tmp <- uniqueHap
   
-while(T) { # haplopytes along the list
-    
-    tmp_hapList <- mergingHaplotypes(tmpUniqueHapList)
-    tmp_namesHapList <- namesHapListFunction(tmp_hapList)
-    
-    if (sum(duplicated(tmp_namesHapList)) == 0) {
+  #homogeneizes the list in terms of dataframe and all the HQ haps start with the config 0,1
+  l_newHapList_tmp <- lapply(1:length(l_newHapList_tmp), function(x) { creatingHapList(x, l_newHapList_tmp) })
+  l_uniqueHapListNames <- lapply(1:length(l_newHapList_tmp), function(x) {colnames(l_newHapList_tmp[[x]])})
+  v_uniqueHapListNames <- namesHapListFunction(l_newHapList_tmp)
+  
+  if (length(l_newHapList_tmp) > 1) {
+    while(length(l_newHapList_tmp) > 1 & sum(duplicated(v_uniqueHapListNames)) > 0) { # if there is more than one hap in the list
       
-      print("Merging step, done!")
-      break;
+      l_finalHapListOfUniqueHaps <- list()
+      newHapCount <- 0    
+      hapCount <- 1
+      while(length(l_newHapList_tmp) >= 1) { #while the list has more than one element
+        
+        tmpNames <- l_uniqueHapListNames[[hapCount]]
+        l_uniqueHapListNames[[hapCount]] <- 0
+        
+        indexToCompare <- which(unlist(lapply(1:length(l_uniqueHapListNames), function(y) {sum(is.element(tmpNames, l_uniqueHapListNames[[y]]))})) > 0)
+        
+        if (length(indexToCompare) > 0) { #first hap of the list does overlap with other haps
+          
+          hapToExport <- mergingHaplotypes(l_newHapList_tmp[c(hapCount, indexToCompare)])[[1]]
+          l_newHapList_tmp <- l_newHapList_tmp[-c(hapCount,indexToCompare)]
+          l_uniqueHapListNames <- l_uniqueHapListNames[-c(hapCount,indexToCompare)]
+          newHapCount <- newHapCount+1
+          
+          
+        } else { # first hap of the list does not overlap with any other hap
+          
+          hapToExport <- l_newHapList_tmp[[hapCount]]
+          l_newHapList_tmp <- l_newHapList_tmp[-c(hapCount)]
+          l_uniqueHapListNames <- l_uniqueHapListNames[-c(hapCount)]
+          newHapCount <- newHapCount+1
+        }
+        l_finalHapListOfUniqueHaps[[newHapCount]] <- hapToExport
+        
+      } #end of merging
       
-    } else {
-      
-      print(paste("Overlaping list nb:", countDupList, sep=" "))
-      tmpUniqueHapList <- tmp_hapList
-      countDupList <- countDupList+1
-    }
+      l_newHapList_tmp <- l_finalHapListOfUniqueHaps
+      #rm(l_finalHapListOfUniqueHaps)
+      l_uniqueHapListNames <- lapply(1:length(l_newHapList_tmp), function(x) {colnames(l_newHapList_tmp[[x]])})
+      v_uniqueHapListNames <- namesHapListFunction(l_newHapList_tmp)
+    } #no more haps have overlapping sites
+    return(l_newHapList_tmp)
     
+  } else { #there is one single hap in the list
+    
+    return(l_newHapList_tmp)
     
   }
-  return(list(tmp_hapList, tmp_namesHapList))
-}
+  
+} 
+####-----------------
+##--------------
+#-----
 
 
 
-##-----------
-#--------
 #######################
 ##
 ## New function Aug 8 2017
@@ -172,16 +210,33 @@ countingHetLinks <- function(linkCountM) { #it takes the order matrix and it ret
 ##------------------
 #------------
 #converts all the elements of the list in the same format
+#aug 16 added the ability to always produce the same type of list
+#where the first hap ALWAYS starts with zero
 creatingHapList <- function(nbHap, listOfHaplotypes) {
-  tmpM <- rbind( as.numeric(listOfHaplotypes[[nbHap]][1,]),  as.numeric(listOfHaplotypes[[nbHap]][2,]))
-  colnames(tmpM) <- colnames(listOfHaplotypes[[nbHap]])
+  
+  # listOfHaplotypes <- l_hap
+  # nbHap <- 1
+  
+  thap_one <- as.numeric(listOfHaplotypes[[nbHap]][1,])
+  thap_two <- as.numeric(listOfHaplotypes[[nbHap]][2,])
+  
+  if (thap_one[1] == 0 & thap_two[1] == 1) {
+    
+    tmpM <- rbind(as.numeric(listOfHaplotypes[[nbHap]][1,]), as.numeric(listOfHaplotypes[[nbHap]][2,]))
+    colnames(tmpM) <- colnames(listOfHaplotypes[[nbHap]])
+    
+  } else if (thap_one[1] == 1 & thap_two[1] == 0) {
+    
+    tmpM <- rbind(as.numeric(listOfHaplotypes[[nbHap]][2,]), as.numeric(listOfHaplotypes[[nbHap]][1,]))
+    colnames(tmpM) <- colnames(listOfHaplotypes[[nbHap]])
+  }
   
   return(tmpM)
 }
 
 
-##--------------------
-#--------------
+##------------------
+#------------
 
 #creating a matrix with all overlapping haps 
 creatingHapMatrixFromLinkCountMatrix <- function(linkCountM_subset, orderLinkCountM_subset) { #it takes subMatrix and subOrder and return a matrix with all haplotypes
@@ -648,7 +703,7 @@ creatingLQhaplotypes <- function(LQVarCoord) {
 
 
 #######################
-## NEW FUNCTIONS - Aug 10 2017
+## NEW FUNCTIONS - Aug 17 2017
 ##
 #######################
 #this function takes the subMatrix following QC and generates the possible haplotypes between a provided LQ variant and all the possible
@@ -657,12 +712,12 @@ creatingLQhaplotypes <- function(LQVarCoord) {
 creatingLQhapsWithTags <- function(LQVarCoord) {
   
   #pos <- 3
-  #LQVarCoord <- "22764314"
+  #LQVarCoord <- "22770994"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
   #overlappingHap is a vector of the length of the hapList and the numbers represent the nb of sites with links information in the LQ matrix
   overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,2] == LQVarCoord),3], colnames(hapList[[x]]))) }))
   indexOverlappingHap <-  which(overlappingHap >= 2) #note before was >=
-  print(length(indexOverlappingHap))
+  #print(length(indexOverlappingHap))
   
   
   if (length(indexOverlappingHap) > 0) {
@@ -684,8 +739,7 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
       for (col in 1:nrow(perHQhap_NewLQPos_m)) {
         
         linkSupported <- perHQhap_NewLQPos_order_m[col,][1:2]
-        
-        
+
         
         if (is.element(1, linkSupported) & is.element(4, linkSupported)) {
           
@@ -736,81 +790,98 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
       
     } #close for across compatible HQ haps
     
-    #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
-    #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
-    if (sum(overlappingHap[indexOverlappingHap]) >= 5) {
-      if ((sum(corrPC_one)/sum(overlappingHap[indexOverlappingHap]) == 1) & (sum(corrPC_one) == sum(corrPC_two))) {
+    if (sum(corrPC_one) == sum(corrPC_two)) { #added Aug 17
+      
+      elementIDToKeep <- which(corrPC_one == overlappingHap[indexOverlappingHap])
+      elementIDToRm <- which(corrPC_one != overlappingHap[indexOverlappingHap])
+      if (length(elementIDToRm) > 0) {
+        newHap <- newHap[-c(elementIDToRm)]
+      }
+      #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
+      #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
+      if (length(elementIDToKeep) > 0) { #added Aug 17
         
-        finalHapMerged_Ordered <- list()
-        for (hapNb in 1:length(indexOverlappingHap)) {
+        indexOverlappingHap <- indexOverlappingHap[elementIDToKeep]
+        #if ((sum(corrPC_one)[elementIDToKeep]/sum(overlappingHap[indexOverlappingHap]) == 1)) {
+        if (sum(overlappingHap[indexOverlappingHap]) >= 5) {
           
-          #merging the full HQ with the lowHQ haplotype
-          if (length(setdiff(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))) >= 1) {
+          finalHapMerged_Ordered <- list()
+          for (hapNb in 1:length(indexOverlappingHap)) {
             
-            lastVarCommon <- intersect(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))[1]
-            varOut <- intersect(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))[-1]
-            index_varOut <- match(varOut, colnames(hapList[[indexOverlappingHap[hapNb]]]))
-            
-            finalHapMerged <- merge(newHap[[hapNb]], hapList[[indexOverlappingHap[hapNb]]][,-index_varOut], by = lastVarCommon)
-            finalHapMerged_Ordered[[hapNb]] <- finalHapMerged[,order(as.numeric(colnames(finalHapMerged)), decreasing = F)]
-            
-          } else if (length(setdiff(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))) == 0) {
-            
-            finalHapMerged_Ordered[[hapNb]] <- newHap[[hapNb]]
-          }
-          #return(finalHapMerged_Ordered)
-        }
-        
-        
-        listHapTags <- lapply(1:length(indexOverlappingHap), function(x) { taggingLQvar_HQhap_combination(LQVarCoord, finalHapMerged_Ordered, x, indexOverlappingHap) })
-        listDoubleHaps <- list()
-        if (length(indexOverlappingHap) == 1) {
-          
-          tmpTag <- unlist(strsplit(listHapTags[[1]], split="_"))
-          listDoubleHaps <- list(paste(tmpTag[1], tmpTag[2], "X", tmpTag[3], "X", sep = "_")) 
-          return(unlist(listDoubleHaps))
-          
-        } else if (length(indexOverlappingHap) >= 2) {
-          
-          df_hapTags <- data.frame(matrix(unlist(lapply(1:length(listHapTags), function(x) {strsplit(listHapTags[[x]], split = "_")})), ncol = 3, byrow = T))
-          
-          countRow <- 1
-          
-          while(countRow < nrow(df_hapTags)) {
-            
-            previousHapTmp <- df_hapTags[countRow,2]
-            nextHapTmp <- df_hapTags[countRow+1,2]
-            firstComb <- df_hapTags[countRow,3]
-            
-            if (df_hapTags[countRow,3] == "AD" & df_hapTags[countRow+1,3] == "AD") {
+            #merging the full HQ with the lowHQ haplotype
+            if (length(setdiff(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))) >= 1) {
               
-              secondComb <- "AD"
-            } else if (df_hapTags[countRow,3] == "AD" & df_hapTags[countRow+1,3] == "BC") {
-              secondComb <- "BC"
+              lastVarCommon <- intersect(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))[1]
+              varOut <- intersect(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))[-1]
+              index_varOut <- match(varOut, colnames(hapList[[indexOverlappingHap[hapNb]]]))
               
-            } else if (df_hapTags[countRow,3] == "BC" & df_hapTags[countRow+1,3] == "AD") {
-              secondComb <- "BC"
+              finalHapMerged <- merge(newHap[[hapNb]], hapList[[indexOverlappingHap[hapNb]]][,-index_varOut], by = lastVarCommon)
+              finalHapMerged_Ordered[[hapNb]] <- finalHapMerged[,order(as.numeric(colnames(finalHapMerged)), decreasing = F)]
               
-            } else if (df_hapTags[countRow,3] == "BC" & df_hapTags[countRow+1,3] == "BC") {
-              secondComb <- "AD"
+            } else if (length(setdiff(colnames(hapList[[indexOverlappingHap[hapNb]]]),colnames(newHap[[hapNb]]))) == 0) {
+              
+              finalHapMerged_Ordered[[hapNb]] <- newHap[[hapNb]]
             }
-            listDoubleHaps[[countRow]] <- paste(df_hapTags[1,1], previousHapTmp, nextHapTmp, firstComb, secondComb, sep="_")
-            countRow <- countRow+1
+            #return(finalHapMerged_Ordered)
           }
           
-          cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-          return(unlist(listDoubleHaps))
+          
+          listHapTags <- lapply(1:length(indexOverlappingHap), function(x) { taggingLQvar_HQhap_combination(LQVarCoord, finalHapMerged_Ordered, x, indexOverlappingHap) })
+          listDoubleHaps <- list()
+          if (length(indexOverlappingHap) == 1) {
+            
+            tmpTag <- unlist(strsplit(listHapTags[[1]], split="_"))
+            listDoubleHaps <- list(paste(tmpTag[1], tmpTag[2], "X", tmpTag[3], "X", sep = "_")) 
+            return(unlist(listDoubleHaps))
+            
+          } else if (length(indexOverlappingHap) >= 2) {
+            
+            df_hapTags <- data.frame(matrix(unlist(lapply(1:length(listHapTags), function(x) {strsplit(listHapTags[[x]], split = "_")})), ncol = 3, byrow = T))
+            
+            countRow <- 1
+            
+            while(countRow < nrow(df_hapTags)) {
+              
+              previousHapTmp <- df_hapTags[countRow,2]
+              nextHapTmp <- df_hapTags[countRow+1,2]
+              firstComb <- df_hapTags[countRow,3]
+              
+              if (df_hapTags[countRow,3] == "AD" & df_hapTags[countRow+1,3] == "AD") {
+                
+                secondComb <- "AD"
+              } else if (df_hapTags[countRow,3] == "AD" & df_hapTags[countRow+1,3] == "BC") {
+                secondComb <- "BC"
+                
+              } else if (df_hapTags[countRow,3] == "BC" & df_hapTags[countRow+1,3] == "AD") {
+                secondComb <- "BC"
+                
+              } else if (df_hapTags[countRow,3] == "BC" & df_hapTags[countRow+1,3] == "BC") {
+                secondComb <- "AD"
+              }
+              listDoubleHaps[[countRow]] <- paste(df_hapTags[1,1], previousHapTmp, nextHapTmp, firstComb, secondComb, sep="_")
+              countRow <- countRow+1
+            }
+            
+            #cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+            return(unlist(listDoubleHaps))
+          }
+        } else {
+          
+          cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five compatible comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+          listDoubleHaps <- 0
+          return(listDoubleHaps)
         }
+        
       } else {
         
-        cat(paste("Variant:", LQVarCoord, "not supported or ERROR: haplotypes differ.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+        cat(paste("Variant:", LQVarCoord, "not supported or ERROR: no HQ hap with compatible comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
         listDoubleHaps <- 0
         return(listDoubleHaps)
+        
       }
-      
     } else {
       
-      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+      cat(paste("Variant:", LQVarCoord, "not supported. ERROR: HQ haps are wrong.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
       listDoubleHaps <- 0
       return(listDoubleHaps)
       
@@ -825,7 +896,9 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
   }
   
 }
+#####--------------
 ##---------------
+
 taggingLQvar_HQhap_combination <- function(LQvar, list_full_HQhaps, nb_of_haplotype, indexHQhap) { #takes global variable --> hapList 
   
   # LQvar <- LQVarCoord
