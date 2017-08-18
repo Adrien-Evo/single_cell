@@ -100,7 +100,7 @@ excludingDuplicates <- function(l) { #takes as FUNCTIONS: creatingHapList, names
 
 #######################
 ##
-## New function Aug 8 2017
+## New function Aug 18 2017
 ##
 #######################
 computingLinks <- function(tmpSite, listOfVar, HQ_genotypeMatrix, outFileName) { #it takes the geno M filtered for those variants with > minHQCells 
@@ -108,45 +108,58 @@ computingLinks <- function(tmpSite, listOfVar, HQ_genotypeMatrix, outFileName) {
   #it does not return anything, it rather creates a file with all links following the qual. conditions
   
   nbWindows <- 0
+  #print(tmpSite)
   tmpSiteIndex <- which(listOfVar == tmpSite)
-  count_var_y <- tmpSiteIndex+1
-  tmp_df_links <- list()
+  #listOfVar <- sub_LQvarNames
+  #tmpSiteIndex <- which(listOfVar == tmpLQSite)
+  #tmpLQSite, sub_LQvarNames, tmp_geno, outputLQPhasing
   
-  while (count_var_y <= nrow(HQ_genotypeMatrix)) {
+  if (length(tmpSiteIndex) > 0) {
     
-    tmp <- HQ_genotypeMatrix[c(tmpSiteIndex,count_var_y),]
+    count_var_y <- tmpSiteIndex+1
+    tmp_df_links <- list()
     
-    col_i <- c()
-    indexToTake <- as.vector(which(apply(tmp, 2, function(x) { col_i <- c(col_i, sum(is.na(x))) }) == 0))
-    print(paste("Nb of overlapping cells:", length(indexToTake)))
-    
-    if (length(indexToTake) >= minNbCells) {
+    while (count_var_y <= nrow(HQ_genotypeMatrix)) {
       
+      tmp <- HQ_genotypeMatrix[c(tmpSiteIndex,count_var_y),]
       
-      tmp_sub <- tmp[,indexToTake]
-      v_countLinks <- apply(vapply(1:ncol(tmp_sub), get_LinkCount, tmp=tmp_sub, FUN.VALUE = rep(0,4)), 1, sum)
-      print(listOfVar[count_var_y])
+      col_i <- c()
+      indexToTake <- as.vector(which(apply(tmp, 2, function(x) { col_i <- c(col_i, sum(is.na(x))) }) == 0))
+      #print(paste("Nb of overlapping cells:", length(indexToTake)))
       
-      cat("Link found", file=outFileName, sep="\n", append = T)
-      nbWindows <- nbWindows+1
-      cat(paste("Link nb:", nbWindows, sep=" "), file=outFileName, sep="\n", append=T)
-      cat(paste("Two SNP window:", listOfVar[tmpSiteIndex], "|", listOfVar[count_var_y], sep=" "), file=outFileName, sep="\n", append = T)
+      if (length(indexToTake) >= minNbCells) {
+        
+        
+        tmp_sub <- tmp[,indexToTake]
+        v_countLinks <- apply(vapply(1:ncol(tmp_sub), get_LinkCount, tmp=tmp_sub, FUN.VALUE = rep(0,4)), 1, sum)
+        #print(listOfVar[count_var_y])
+        
+        #cat("Link found", file=outFileName, sep="\n", append = T)
+        nbWindows <- nbWindows+1
+        #cat(paste("Link nb:", nbWindows, sep=" "), file=outFileName, sep="\n", append=T)
+        #cat(paste("Two SNP window:", listOfVar[tmpSiteIndex], "|", listOfVar[count_var_y], sep=" "), file=outFileName, sep="\n", append = T)
+        
+        tmp_df_links[[nbWindows]] <- c(chr, tmpSite, listOfVar[count_var_y], v_countLinks[1], v_countLinks[2], v_countLinks[3], v_countLinks[4])
+        
+      } 
+      count_var_y <- count_var_y+1
+    }
+    if (length(tmp_df_links) > 0) {
       
-      tmp_df_links[[nbWindows]] <- c(chr, tmpSite, listOfVar[count_var_y], v_countLinks[1], v_countLinks[2], v_countLinks[3], v_countLinks[4])
-      
-    } 
-    count_var_y <- count_var_y+1
-  }
-  if (length(tmp_df_links) > 0) {
-    
-    HQlinks_df <- data.frame(matrix(unlist(tmp_df_links), ncol=7, byrow = T))
-    names(HQlinks_df) <- c("chrNb","PosOne", "PosTwo", "0/0", "0/1", "1/0", "1/1")
+      HQlinks_df <- data.frame(matrix(unlist(tmp_df_links), ncol=7, byrow = T))
+      names(HQlinks_df) <- c("chrNb","PosOne", "PosTwo", "0/0", "0/1", "1/0", "1/1")
+    } else {
+      HQlinks_df <- 0
+    }
   } else {
+    
     HQlinks_df <- 0
   }
   return(HQlinks_df)
 }
 ##---------
+#------
+
 #------
 #subsets links matrix according to QC we specify
 subsettingLinksMatrix <- function(PC_tbl) { #local variable: PC_tbl = matrix with HQ link; global variables: 1)HQ_ratio, 2) minNbLinks; FUNCTIONS: 1) countingHetLinks.
@@ -703,7 +716,7 @@ creatingLQhaplotypes <- function(LQVarCoord) {
 
 
 #######################
-## NEW FUNCTIONS - Aug 17 2017
+## NEW FUNCTIONS - Aug 18 2017
 ##
 #######################
 #this function takes the subMatrix following QC and generates the possible haplotypes between a provided LQ variant and all the possible
@@ -712,7 +725,7 @@ creatingLQhaplotypes <- function(LQVarCoord) {
 creatingLQhapsWithTags <- function(LQVarCoord) {
   
   #pos <- 3
-  #LQVarCoord <- "22770994"
+  #LQVarCoord <- varLQstep[2]
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
   #overlappingHap is a vector of the length of the hapList and the numbers represent the nb of sites with links information in the LQ matrix
   overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,2] == LQVarCoord),3], colnames(hapList[[x]]))) }))
@@ -739,7 +752,8 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
       for (col in 1:nrow(perHQhap_NewLQPos_m)) {
         
         linkSupported <- perHQhap_NewLQPos_order_m[col,][1:2]
-
+        
+        
         
         if (is.element(1, linkSupported) & is.element(4, linkSupported)) {
           
@@ -832,7 +846,8 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
             
             tmpTag <- unlist(strsplit(listHapTags[[1]], split="_"))
             listDoubleHaps <- list(paste(tmpTag[1], tmpTag[2], "X", tmpTag[3], "X", sep = "_")) 
-            return(unlist(listDoubleHaps))
+            vListDoubleHaps <- unlist(listDoubleHaps)
+            return(vListDoubleHaps)
             
           } else if (length(indexOverlappingHap) >= 2) {
             
@@ -862,36 +877,38 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
               countRow <- countRow+1
             }
             
-            #cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-            return(unlist(listDoubleHaps))
+            cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+            
+            vListDoubleHaps <- unlist(listDoubleHaps)
+            return(vListDoubleHaps)
           }
         } else {
           
           cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five compatible comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-          listDoubleHaps <- 0
-          return(listDoubleHaps)
+          vListDoubleHaps <- 0
+          return(vListDoubleHaps)
         }
         
       } else {
         
         cat(paste("Variant:", LQVarCoord, "not supported or ERROR: no HQ hap with compatible comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-        listDoubleHaps <- 0
-        return(listDoubleHaps)
+        vListDoubleHaps <- 0
+        return(vListDoubleHaps)
         
       }
     } else {
       
       cat(paste("Variant:", LQVarCoord, "not supported. ERROR: HQ haps are wrong.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-      listDoubleHaps <- 0
-      return(listDoubleHaps)
+      vListDoubleHaps <- 0
+      return(vListDoubleHaps)
       
     }
     
   } else {
     
     cat(paste("Variant:", LQVarCoord, "not supported. ERROR: not enough HQ haplotypes", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-    listDoubleHaps <- 0
-    return(listDoubleHaps)
+    vListDoubleHaps <- 0
+    return(vListDoubleHaps)
     
   }
   
