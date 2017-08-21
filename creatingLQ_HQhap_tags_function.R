@@ -8,7 +8,7 @@
 creatingLQhapsWithTags <- function(LQVarCoord) {
   
   #pos <- 3
-  #LQVarCoord <- varLQstep[2]
+  #LQVarCoord <- "97507249"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
   #overlappingHap is a vector of the length of the hapList and the numbers represent the nb of sites with links information in the LQ matrix
   overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,2] == LQVarCoord),3], colnames(hapList[[x]]))) }))
@@ -129,6 +129,7 @@ creatingLQhapsWithTags <- function(LQVarCoord) {
             
             tmpTag <- unlist(strsplit(listHapTags[[1]], split="_"))
             listDoubleHaps <- list(paste(tmpTag[1], tmpTag[2], "X", tmpTag[3], "X", sep = "_")) 
+            cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
             vListDoubleHaps <- unlist(listDoubleHaps)
             return(vListDoubleHaps)
             
