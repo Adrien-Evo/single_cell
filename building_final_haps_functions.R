@@ -5,10 +5,15 @@
 
 buildingHQ_connections <- function(hqListSize, outF, t) { #GLOBAL variable: 1) hap_df.
   
+  # hqListSize <- length(hapList)
+  # outF <- HQ_HQ_connectionLog
+  # t <- minLQsupport
+  
   hapCoveredByLQ <- intersect(1:hqListSize, sort(as.numeric(union(hap_df[,2], hap_df[,3]))[!is.na(as.numeric(union(hap_df[,2], hap_df[,3])))]))
   hapNotCovByLQ <- setdiff(1:hqListSize, sort(as.numeric(union(hap_df[,2], hap_df[,3]))[!is.na(as.numeric(union(hap_df[,2], hap_df[,3])))]))
-  
-  cat(paste("Hap Nb:", hapNotCovByLQ, "excluded." , sep=" "), file = outF, append = T, sep = "\n")
+  if (length(hapNotCovByLQ) > 0) {
+    cat(paste("Hap Nb:", hapNotCovByLQ, "excluded." , sep=" "), file = outF, append = T, sep = "\n")
+  }
   HQhap_index_x <- 1
   HQhap_index_y <- HQhap_index_x+1
   linksTags <- c("AD", "BC", "X")
@@ -121,21 +126,26 @@ linkingLQvar_toHQhaplotypes <- function() { #takes two GLOBAL variables: hapList
 #function to assemble haplotypes
 assemblingCompleteHaplotypes <- function(hapNb) {
   
-  #hapNb <- 1
-  perHQhapLQvar <- data.frame(matrix(unlist(strsplit(listHQhap_LQvar[[hapNb]], split="_")), ncol=2, byrow = T))
-  tmpFullHapNames <- c(colnames(hapList[[hapNb]])[1], as.vector(perHQhapLQvar[,1]))
-  tmpZeroOneComb <- rep(0,length(as.vector(perHQhapLQvar[,2])))
-  tmpZeroOneComb[which(as.vector(perHQhapLQvar[,2]) == "BC")] <- 1
-  tmpFullHaplotype <- c(0, tmpZeroOneComb)
-  names(tmpFullHaplotype) <- tmpFullHapNames
-  
-  tmpFullHaplotype <- c(tmpFullHaplotype,hapList[[hapNb]][which(hapList[[hapNb]][,1] == 0),2:ncol(hapList[[hapNb]])])
-  
-  tmpOppositeHap <- rep(1, length(tmpFullHaplotype))
-  tmpOppositeHap[which(tmpFullHaplotype == 1)] <- 0
-  names(tmpOppositeHap) <- names(tmpFullHaplotype)
-  return(list(tmpFullHaplotype, tmpOppositeHap))
-  
+  #hapNb <- 45
+  if (length(listHQhap_LQvar[[hapNb]]) > 0) {
+    perHQhapLQvar <- data.frame(matrix(unlist(strsplit(listHQhap_LQvar[[hapNb]], split="_")), ncol=2, byrow = T))
+    tmpFullHapNames <- c(colnames(hapList[[hapNb]])[1], as.vector(perHQhapLQvar[,1]))
+    tmpZeroOneComb <- rep(0,length(as.vector(perHQhapLQvar[,2])))
+    tmpZeroOneComb[which(as.vector(perHQhapLQvar[,2]) == "BC")] <- 1
+    tmpFullHaplotype <- c(0, tmpZeroOneComb)
+    names(tmpFullHaplotype) <- tmpFullHapNames
+    
+    tmpFullHaplotype <- c(tmpFullHaplotype,hapList[[hapNb]][which(hapList[[hapNb]][,1] == 0),2:ncol(hapList[[hapNb]])])
+    
+    tmpOppositeHap <- rep(1, length(tmpFullHaplotype))
+    tmpOppositeHap[which(tmpFullHaplotype == 1)] <- 0
+    names(tmpOppositeHap) <- names(tmpFullHaplotype)
+    return(list(tmpFullHaplotype, tmpOppositeHap))
+  } else {
+    tmpFullHaplotype <- hapList[[hapNb]][1,]
+    tmpOppositeHap <- hapList[[hapNb]][2,]
+    return(list(tmpFullHaplotype, tmpOppositeHap))
+  }  
 }
 
 #################################
