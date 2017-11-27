@@ -140,7 +140,7 @@ cat("HQ phasing... DONE.", file=mainOutput, sep="\n", append = T)
 listLinks <- listLinks[which(sapply(listLinks, length) > 1)] #modified by Nov 27
 
 links_and_order_tmp <- list()
-links_and_order_tmp <- mclapply(listLinks, function(x) {  subsettingLinksMatrix(x, HQ_ratio)}, mc.cores = nbOfCores)
+links_and_order_tmp <- mclapply(listLinks, function(x) {  subsettingLinksMatrix(x, HQ_ratio)}, mc.cores = nbOfCores) #added by Nov 27
 
 # fullHQlinksComb <- data.frame()
 # fullHQlinksComb <- do.call(rbind, listLinks[which(sapply(listLinks, length) > 1)]) #removed by Nov 27
@@ -217,6 +217,153 @@ if (exportMatPhaseONe == T) {
   
 }
 
+# #HAPLIST CONTAINS ONLY ONE HAP
+# if (length(hapList) == 1) { 
+#   
+#   
+#   #CREATE A FUNCTION FOR THIS CASE
+#   
+# 
+# #HAPLIST CONTAINS MORE THAN 5 HAPS
+# } else if (length(hapList) > 5 ) {
+#   
+#   #######################
+#   ##
+#   ## Compute all pairwise comb between LQ var and HQ var
+#   ##
+#   #######################
+#   #COMMENT
+#   cat("LQ variants are required to link HQ haplotypes.", file=mainOutput, sep="\n", append = T)
+#   #resetting QC filters
+#   minHQCells <- 10
+#   minNbCells <- 4
+#   minNbLinks <- 2
+#   
+#   #COMMENT
+#   cat("LQvar-HQhaplotype links will be done with the following QC: ", file=mainOutput, sep="\n", append = T)
+#   cat(paste("Number of cells with variant genotyped at GQ > 20: ", minHQCells, ".", sep = ""), file=mainOutput, sep="\n", append = T)
+#   cat(paste("Number of cells covering each LQvar-varWithinHQhap combination: ", minNbCells, ".", sep = ""), file=mainOutput, sep="\n", append = T)
+#   cat(paste("Number of cells covering each LQvar-varWithinHQhap pairwise combination of alleles: ", minNbLinks, ".", sep = ""), file=mainOutput, sep="\n", append = T)
+#   
+#   varInHQhaps <- namesHapList
+#   rm(namesHapList)
+#   #COMMENT
+#   cat("Creating cluster for LQ-HQhap links compution...", file=mainOutput, sep="\n", append = T)
+#   
+#   #initializing cluster
+#   LQ_HQ_links_list <- list()
+#   #openGenoq, openGeno, varNames, outputLQPhasing, minHQCells
+#   LQ_HQ_links_list <- mclapply(varNames, function(x) { subsettingByQuality_computingLQLinks(tmpLQSite=x, varNamesInHQhaps=varInHQhaps, outLog=LQlinksLog) }, mc.cores = nbOfCores)
+#   #change from varNames to varNames-HQvar
+#   #COMMENT
+#   cat("LQvar-HQhap links computation... DONE.", file=mainOutput, sep="\n", append = T)
+#   
+#   #-- NEW OCT 25
+#   #COMMENT
+#   cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
+#   
+#   links_and_order_List <- list()
+#   links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores)
+#   #COMMENT
+#   cat("Subsetting and ordering of LQ-HQhap links per LQvar matrices... DONE.", file=mainOutput, sep="\n", append = T)
+#   links_and_order_List <- links_and_order_List[!sapply(links_and_order_List, is.null)] #modified by Oct 26
+#   #---
+#   
+#   #merge matrices over all the LQ var into a single matrix
+#   subMatrix <- do.call(rbind, (lapply(links_and_order_List, "[[", 1))) #modified by Oct 26
+#   subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by Oct 26
+#   
+#   #### COMMENT OUT if you are generating the phaseTwoLinksOutput matrix
+#   #fullHQlinksComb <- read.table(phaseTwoLinksOutput, header=T)
+#   ###--------
+#   #-----
+#   
+#   # links_and_order_tmp <- subsettingLinksMatrix(fullHQlinksComb, LQ_ratio)
+#   # subMatrix <- links_and_order_tmp[[1]] #removed by Oct 25
+#   # subOrder <- links_and_order_tmp[[2]] #removed by Oct 25
+#   #rm(links_and_order_List) #modified by Oct 25
+#   rm(LQ_HQ_links_list) #modified by Oct
+#   
+#   #varLQstep <- names(table(subMatrix[,2])) #NOTE!!! probably I can remove this as going over the list does not require the names of the LQVar
+#   
+#   if (exportLQLinksTbl) {
+#     #COMMENT
+#     cat("Exporting matrix with supported LQvar-HQvar links.", file=mainOutput, sep="\n", append = T)
+#     write.table(subMatrix, file=phaseTwoLinksOutput, quote = F, row.names = F, col.names = T, sep="\t")
+#     
+#   }
+#   
+#   ##########################
+#   ##
+#   ##Step THREE
+#   ###########################
+#   #COMMENT
+#   cat("Building up LQvar-HQhap connection.", file=mainOutput, sep="\n", append = T)
+#   
+#   #computing the abs number of closer haplotypes
+#   nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
+#   #COMMENT
+#   cat("Creating cluster for LQvar-HQhap phasing...", file=mainOutput, sep="\n", append = T)
+#   ## Calculate the number of cores
+#   finalHapList <- list()
+#   finalHapList <- mclapply(seq_along(varLQstep), function(varPos) { creatingLQhaplotypes(varLQstep[varPos]) }, mc.cores = nbOfCores)
+# 
+#   #new Nov 27
+#   finalHapList <- mclapply(links_and_order_List, creatingLQhaplotypes(m), mc.cores = nbOfCores)
+#   
+#     
+#   #COMMENT
+#   cat("LQvar-HQhap phasing... DONE.", file=mainOutput, sep="\n", append = T)
+#   #-
+#   #removing empty entries from the finalHapList
+#   reducedFinalHapList <- list()
+#   reducedFinalHapList <- finalHapList[!sapply(finalHapList, is.null)] #modified by Oct 26
+#   
+#   #organizing the list
+#   ## Calculate the number of cores
+#   # no_cores <- detectCores() #modified by Oct 27
+#   # cl <- makeCluster(no_cores) #modified by Oct 27
+#   # clusterExport(cl, c("reducedFinalHapList", "creatingHapList")) #modified by Oct 27
+#   cleanReducedList <- list() #modified by Oct 27
+#   cleanReducedList <- mclapply(seq_along(reducedFinalHapList), function(x) { creatingHapList(x, reducedFinalHapList) }, mc.cores = nbOfCores) #modified by Oct 27
+#   
+#   #merging the HQhaps with the LQ_HQhap links
+#   mergedHapList <- excludingDuplicates(cleanReducedList)
+#   #COMMENT
+#   cat("Merging all LQvar-HQhaplotypes ... DONE.", file=mainOutput, sep="\n", append = T)
+#   
+#   if (length(mergedHapList) > 1) {
+#     #COMMENT
+#     cat("Multiple haplotypes still exist. ERROR.", file=mainOutput, sep="\n", append = T)
+#     
+#   } else if (length(mergedHapList) == 1) {
+#     #COMMENT
+#     cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
+#     #ordering the final hap
+#     matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))]
+#     write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
+#     
+#   }
+# #HAPLIST CONTAINS > 1 and <= 5 HAPS only keeps the one that contains more 50% of the HQvarNames
+# } else if (lenght(hapList) > 1 & lenght(hapList) <= 5) {
+#   
+#   
+#   maxNbColHapList <- max(unlist(lapply(hapList, FUN = ncol)))
+#   indxBiggestHapList <- which(unlist(lapply(hapList, FUN = ncol)) == maxNbColHapList)
+#   if (maxNbColHapList > (length(HQvarNames)*0.5)) {
+#     
+#     hapList <- hapList[[indxBiggestHapList]]
+#     cat("List containing HQ haplotypes was reduced to one HQ haplotype.", file=mainOutput, sep="\n", append = T)
+#     
+#     #CREATE A FUNCTION FOR THIS CASE
+#     
+#   } else {
+#     
+#     cat("ERROR: Unable to reconstruct a wide HQ haplotype.", file=mainOutput, sep="\n", append = T)
+#     
+#   }
+#   
+# }
 #######################
 ##
 ## Compute all pairwise comb between LQ var and HQ var
@@ -253,9 +400,10 @@ cat("LQvar-HQhap links computation... DONE.", file=mainOutput, sep="\n", append 
 cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
 
 links_and_order_List <- list()
-links_and_order_List <- mclapply(1:length(LQ_HQ_links_list), function(x) {  subsettingLinksMatrix(LQ_HQ_links_list[[x]], LQ_ratio)}, mc.cores = nbOfCores)
+links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores) #changed by late Nov 27
 #COMMENT
 cat("Subsetting and ordering of LQ-HQhap links per LQvar matrices... DONE.", file=mainOutput, sep="\n", append = T)
+cat(paste0("Links and order list size: ", length(links_and_order_List), "."), file=mainOutput, sep="\n", append = T) #added by late Nov 27
 links_and_order_List <- links_and_order_List[!sapply(links_and_order_List, is.null)] #modified by Oct 26
 #---
 
@@ -274,7 +422,7 @@ subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by
 rm(links_and_order_List) #modified by Oct 25
 rm(LQ_HQ_links_list) #modified by Oct
 
-varLQstep <- names(table(subMatrix[,2]))
+varLQstep <- names(table(subMatrix[,2])) #NOTE I may not need this ! REMOVE!
 
 if (exportLQLinksTbl) {
   #COMMENT
