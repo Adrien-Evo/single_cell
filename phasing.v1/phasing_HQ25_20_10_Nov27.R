@@ -8,8 +8,8 @@ source(paste(pathToScratch,"/functions_new_Oct27/building_final_haps_functions.R
 source(paste(pathToScratch,"/functions_new_Oct27/computingLinks_functions.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/subsettingLinksMatrix_function.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/list_to_matrix_to_list_function.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/creatingHapList_gettingHapNames_functions.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/excludingDuplicates_function.R", sep=""))
+source(paste(pathToScratch,"/functions_new_Oct27/creatingHapList_gettingHapNames_functions.v1.R", sep=""))
+source(paste(pathToScratch,"/functions_new_Oct27/excludingDuplicates_function.v1.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/mergingHap_function.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/building_final_haps_functions.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/creatingHapByMerging.v1.R", sep=""))
@@ -182,11 +182,11 @@ l_hap <- creatingHapListFromLinkCountMatrix(m_hap)
 
 #the next steps remove direct duplicates followed by merging them (and merging partial duplicates - sharing the same var Names but with the inverted
 #haplotypes)
-uniqueHap <- lapply(1:length(l_hap), function(x) { creatingHapList(x, l_hap) })
+uniqueHap <-  mclapply(l_hap, FUN = creatingHapList, mc.cores = nbOfCores)  # changed by Dec 1
 uniqueHap <- unique(uniqueHap)
 #generating a list of unique merged haplotypes: FINAL config
 tmpListToRm <- excludingDuplicates(uniqueHap)
-tmpListToRm <- lapply(1:length(tmpListToRm), function(x) { creatingHapList(x, tmpListToRm) })
+tmpListToRm <-  mclapply(tmpListToRm, FUN = creatingHapList, mc.cores = nbOfCores)  # changed by Dec 1
 #rm(uniqueHap)
 
 hapList <- tmpListToRm
@@ -202,7 +202,7 @@ rm(m_hap)
 rm(l_hap)
 
 #convert all elements of the hapList into the same type of objects
-hapList <- lapply(1:length(hapList), function(x) { creatingHapList(x, hapList) })
+hapList <- mclapply(hapList, FUN = creatingHapList, mc.cores = nbOfCores) # changed by Dec 1
 
 if (exportMatPhaseONe == T) {
   #COMMENT
@@ -257,31 +257,23 @@ cat("Subsetting and ordering of LQ-HQhap links per LQvar matrices... DONE.", fil
 links_and_order_List <- links_and_order_List[!sapply(links_and_order_List, is.null)] #modified by Oct 26
 cat(paste0("Links and order list size: ", length(links_and_order_List), "."), file=mainOutput, sep="\n", append = T) #added by late Nov 27
 #---
-# 
-# #merge matrices over all the LQ var into a single matrix
-# subMatrix <- do.call(rbind, (lapply(links_and_order_List, "[[", 1))) #modified by Oct 26
-# subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by Oct 26
-# 
-# #### COMMENT OUT if you are generating the phaseTwoLinksOutput matrix
-# #fullHQlinksComb <- read.table(phaseTwoLinksOutput, header=T)
-# ###--------
-# #-----
-# 
-# # links_and_order_tmp <- subsettingLinksMatrix(fullHQlinksComb, LQ_ratio)
-# # subMatrix <- links_and_order_tmp[[1]] #removed by Oct 25
-# # subOrder <- links_and_order_tmp[[2]] #removed by Oct 25
-# rm(links_and_order_List) #modified by Oct 25
-rm(LQ_HQ_links_list) #modified by Oct
-# 
-# varLQstep <- names(table(subMatrix[,2]))
-# 
-# if (exportLQLinksTbl) {
-#   #COMMENT
-#   cat("Exporting matrix with supported LQvar-HQvar links.", file=mainOutput, sep="\n", append = T)
-#   write.table(subMatrix, file=phaseTwoLinksOutput, quote = F, row.names = F, col.names = T, sep="\t")
-#   
-# }
-# 
+if (exportLQLinksTbl) {
+
+  #merge matrices over all the LQ var into a single matrix
+  subMatrix <- do.call(rbind, (lapply(links_and_order_List, "[[", 1))) #modified by Oct 26
+  #subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by Oct 26
+  
+  #### COMMENT OUT if you are generating the phaseTwoLinksOutput matrix
+  #fullHQlinksComb <- read.table(phaseTwoLinksOutput, header=T)
+  ###--------
+  #-----
+  
+  #COMMENT
+  cat("Exporting matrix with supported LQvar-HQvar links.", file=mainOutput, sep="\n", append = T)
+  write.table(subMatrix, file=phaseTwoLinksOutput, quote = F, row.names = F, col.names = T, sep="\t")
+
+}
+rm(LQ_HQ_links_list) #modified by Oct 25 
 # ##########################
 # ##
 # ##Step THREE
@@ -303,14 +295,14 @@ cat("LQvar-HQhap phasing... DONE.", file=mainOutput, sep="\n", append = T)
 #removing empty entries from the finalHapList
 reducedFinalHapList <- list()
 reducedFinalHapList <- finalHapList[!sapply(finalHapList, is.null)] #modified by Oct 26
- 
+rm(finalHapList)
 #organizing the list
 ## Calculate the number of cores
 # no_cores <- detectCores() #modified by Oct 27
 # cl <- makeCluster(no_cores) #modified by Oct 27
 # clusterExport(cl, c("reducedFinalHapList", "creatingHapList")) #modified by Oct 27
 cleanReducedList <- list() #modified by Oct 27
-cleanReducedList <- mclapply(seq_along(reducedFinalHapList), function(x) { creatingHapList(x, reducedFinalHapList) }, mc.cores = nbOfCores) #modified by Oct 27
+cleanReducedList <- mclapply(reducedFinalHapList, FUN =  creatingHapList, mc.cores = nbOfCores) #modified by Dec 1
  
 #merging the HQhaps with the LQ_HQhap links
 mergedHapList <- excludingDuplicates(cleanReducedList)
