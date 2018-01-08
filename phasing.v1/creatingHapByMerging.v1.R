@@ -19,7 +19,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
   #print(length(indexOverlappingHap))
   #getting the HQ haps closer from the LQ variant
   #which(order(sapply(1:length(hapList), function(x) { abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])[1])) } )) <= 10)
-  closerHaps <- order(sapply(1:length(hapList), function(x) { min(abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])[1])), abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])[length(colnames(hapList[[x]]))]))) } ))[1:nbOfCloserHQhap] #modified by late Nov 27
+  closerHaps <- order(sapply(1:length(hapList), function(x) { min(abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])))) } ))[1:nbOfCloserHQhap] #modified by Jan 8
   intersectCov_closerHaps <- intersect(closerHaps, indexOverlappingHap)
   #print(intersectCov_closerHaps)
   
