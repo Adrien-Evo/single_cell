@@ -9,7 +9,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
   
   #pos <- 3
   
-  LQVarCoord <- unique(list_counts_order[[1]][,2]) # modified by Nov 27
+  LQVarCoord <- as.character(unique(list_counts_order[[1]][,2])) # modified by Nov 27
   cat(paste("Analysing variant:", LQVarCoord, ".", sep=" "), file=outputLQPhasing, sep="\n", append=T)
   #LQVarCoord <- "25032267"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
