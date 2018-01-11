@@ -36,6 +36,16 @@ creatingLQhaplotypes <- function(list_counts_order) {
       perHQhap_NewLQPos_m <- list_counts_order[[1]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
       #subsetting the matrix with the links' order
       perHQhap_NewLQPos_order_m <- list_counts_order[[2]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
+      
+      #TO TEST TOMORROW  - Jan 11
+      if (nrow(perHQhap_NewLQPos_m) > 5) {
+
+        perHQhap_NewLQPos_m <- perHQhap_NewLQPos_m[order(abs(as.numeric(LQVarCoord)-as.numeric(as.character(perHQhap_NewLQPos_m[,3]))), decreasing = F)[1:5],] #added by Jan 8
+        perHQhap_NewLQPos_order_m <- perHQhap_NewLQPos_order_m[order(abs(as.numeric(LQVarCoord)-as.numeric(as.character(perHQhap_NewLQPos_m[,3]))), decreasing = F)[1:5],]  #added by Jan 8
+        perHQhap_NewLQPos_m <- perHQhap_NewLQPos_m[order(as.numeric(as.character(perHQhap_NewLQPos_m[,3]))),] #added by Jan 9
+        perHQhap_NewLQPos_order_m <- perHQhap_NewLQPos_order_m[order(as.numeric(as.character(perHQhap_NewLQPos_m[,3]))),] #added by Jan 9
+      }
+      
       vectorList <- list()
       
       for (col in 1:nrow(perHQhap_NewLQPos_m)) {
@@ -66,6 +76,10 @@ creatingLQhaplotypes <- function(list_counts_order) {
         
       }
       
+      #TO TEST TOMORROW - Jan 11
+      overlappingHap[intersectCov_closerHaps][which(overlappingHap[intersectCov_closerHaps] > 5)] <- 5
+      
+      
       # the first which does this - looking for the row number with a zero in the first overlapping site between the HQ hap and the new LQ hap that is not the LQ SITE
       #the following vector contain the combination of states followed by the first zero in the HQ haplotype
       hapZero_One <- as.vector(hapList[[hapNb]][which(hapList[[hapNb]][,colnames(hapList[[hapNb]])[colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])][1]] == 0 ),colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])])
@@ -86,6 +100,17 @@ creatingLQhaplotypes <- function(list_counts_order) {
       #here we compare the HQ hap with the LQ hap for the overlapping sites
       corrPC_one[countHapOver] <- sum(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}))
       corrPC_two[countHapOver] <- sum(apply(m <- rbind(hapOne_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}))
+
+      
+      #TO TEST TOMORROW - Jan 11 
+      if (sum(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}) == FALSE) > 0 | sum(apply(m <- rbind(hapOne_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}) == FALSE) > 0) {
+
+        indexToRmFromNewHap <- as.vector(which(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}) == FALSE))+1
+        newHap[[countHapOver]] <- newHap[[countHapOver]][,-indexToRmFromNewHap]
+
+
+      }
+      
       countHapOver <- countHapOver+1
       
     } #close for across compatible HQ haps
@@ -93,7 +118,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
     #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
     #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
     #if () { #modified by late Nov 27
-      if ((sum(corrPC_one)/sum(overlappingHap[intersectCov_closerHaps]) == 1) & (sum(corrPC_one) == sum(corrPC_two))) {
+      if ((sum(corrPC_one)/sum(overlappingHap[intersectCov_closerHaps]) > 0.75) & (sum(corrPC_one) == sum(corrPC_two))) { #CHANGE TOMORROW TO >= 0.8
         
         finalHapMerged_Ordered <- list()
         for (hapNb in 1:length(intersectCov_closerHaps)) {
