@@ -130,6 +130,8 @@ creatingLQhaplotypes <- function(list_counts_order) {
             varOut <- intersect(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))[-1]
             index_varOut <- match(varOut, colnames(hapList[[intersectCov_closerHaps[hapNb]]]))
             
+            
+            cat(paste("Length of index to rm:", length(index_varOut), sep=" "), file=outputLQPhasing, sep="\n", append=T) #add Jan 15
             finalHapMerged <- merge(newHap[[hapNb]], hapList[[intersectCov_closerHaps[hapNb]]][,-index_varOut], by = lastVarCommon)
             finalHapMerged_Ordered[[hapNb]] <- finalHapMerged[,order(as.numeric(colnames(finalHapMerged)), decreasing = F)]
             
