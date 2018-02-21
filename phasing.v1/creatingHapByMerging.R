@@ -5,26 +5,23 @@
 #this function takes the subMatrix following QC and generates the possible haplotypes between a provided LQ variant and all the possible
 #and previously built HQ haplotypes. It exports a list with the haplotype
 #it takes global variables: hapList, subMatrix, nbOfCloserHQhap
-creatingLQhaplotypes <- function(list_counts_order) {
+creatingLQhaplotypes <- function(LQVarCoord) {
   
   #pos <- 3
-  
-  #list_counts_order <- links_and_order_List[[28]] 
-  LQVarCoord <- unique(list_counts_order[[1]][,2]) # modified by Nov 27
   cat(paste("Analysing variant:", LQVarCoord, ".", sep=" "), file=outputLQPhasing, sep="\n", append=T)
   #LQVarCoord <- "25032267"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
   #overlappingHap is a vector of the length of the hapList and the numbers represent the nb of sites with links information in the LQ matrix
-  overlappingHap <- unlist(lapply(hapList, function(hapl) { sum(is.element(list_counts_order[[1]][,3], colnames(hapl))) })) # modified by Nov 27
+  overlappingHap <- unlist(lapply(1:length(hapList), function(x) { sum(is.element(subMatrix[which(subMatrix[,2] == LQVarCoord),3], colnames(hapList[[x]]))) }))
   indexOverlappingHap <-  which(overlappingHap >= 2) #note before was >=
   #print(length(indexOverlappingHap))
   #getting the HQ haps closer from the LQ variant
   #which(order(sapply(1:length(hapList), function(x) { abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])[1])) } )) <= 10)
-  closerHaps <- order(sapply(1:length(hapList), function(x) { min(abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])))) } ))[1:nbOfCloserHQhap] #modified by Jan 8
+  closerHaps <- order(sapply(1:length(hapList), function(x) { abs(as.numeric(LQVarCoord)-as.numeric(colnames(hapList[[x]])[1])) } ))[1:nbOfCloserHQhap]
   intersectCov_closerHaps <- intersect(closerHaps, indexOverlappingHap)
   #print(intersectCov_closerHaps)
   
-  if (length(intersectCov_closerHaps) > 0 & sum(overlappingHap[intersectCov_closerHaps]) >= 5) {
+  if (length(intersectCov_closerHaps) > 0) {
     
     corrPC_one <- c()
     corrPC_two <- c()
@@ -34,9 +31,9 @@ creatingLQhaplotypes <- function(list_counts_order) {
     for (hapNb in intersectCov_closerHaps) {
       
       #subsetting the subMatrix per LQ variant
-      perHQhap_NewLQPos_m <- list_counts_order[[1]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
+      perHQhap_NewLQPos_m <- subMatrix[intersect(which(subMatrix[,2] == LQVarCoord),which(subMatrix[,3] %in% as.numeric(colnames(hapList[[hapNb]])))),]
       #subsetting the matrix with the links' order
-      perHQhap_NewLQPos_order_m <- list_counts_order[[2]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
+      perHQhap_NewLQPos_order_m <- subOrder[intersect(which(subMatrix[,2] == LQVarCoord),which(subMatrix[,3] %in% as.numeric(colnames(hapList[[hapNb]])))),]
       vectorList <- list()
       
       for (col in 1:nrow(perHQhap_NewLQPos_m)) {
@@ -62,7 +59,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
         } else {
           
           newHap[[countHapOver]] <- merge(newHap[[countHapOver]], vectorList[[col]], by = as.character(LQVarCoord))
-          
+
         }
         
       }
@@ -93,7 +90,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
     
     #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
     #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
-    #if () { #modified by late Nov 27
+    if (sum(overlappingHap[intersectCov_closerHaps]) >= 5) {
       if ((sum(corrPC_one)/sum(overlappingHap[intersectCov_closerHaps]) == 1) & (sum(corrPC_one) == sum(corrPC_two))) {
         
         finalHapMerged_Ordered <- list()
@@ -135,19 +132,19 @@ creatingLQhaplotypes <- function(list_counts_order) {
         # finalHap <- 0
         # return(finalHap)
       }
-    # } else {
-    #   
-    #   cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-    #   # finalHap <- 0
-    #   # return(finalHap)
-    # } 
+    } else {
+      
+      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+      # finalHap <- 0
+      # return(finalHap)
+    } 
     
   } else {
     
     cat(paste("Variant:", LQVarCoord, "not supported. ERROR: not enough HQ haplotypes", sep=" "), file=outputLQPhasing, sep="\n", append=T)
     # finalHap <- 0
     # return(finalHap)
-    
+
   }
   
 }
