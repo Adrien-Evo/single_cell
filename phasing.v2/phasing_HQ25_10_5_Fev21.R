@@ -4,23 +4,24 @@
 pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/scriptsPhasing"
 #pathToScratch <- "/Users/isabelalves/Documents/OICR/singleCells/"
 
-source(paste(pathToScratch,"/functions_new_Oct27/computingLinks_functions.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/subsettingLinksMatrix_function.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/list_to_matrix_to_list_function.v1.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/creatingHapList_gettingHapNames_functions.v1.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/excludingDuplicates_function.v1.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/mergingHap_function.R", sep=""))
-source(paste(pathToScratch,"/functions_new_Oct27/creatingHapByMerging.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/computingLinks_functions.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/subsettingLinksMatrix_function.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/list_to_matrix_to_list_function.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/creatingHapList_gettingHapNames_functions.v1.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/excludingDuplicates_function.v1.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/mergingHap_function.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v2.R", sep=""))
 .libPaths( c("/.mounts/labs/awadallalab/private/flamaze/R_packages", .libPaths() ) )
 #library(Rmpi)
 library(parallel)
-dateToday <- "TODAY"
-nbOfCores <- 10L
+#dateToday <- "TODAY"
+dateToday <- "Feb22"
+nbOfCores <- 4L
 
 #chromosome
-chr <- "CHROM"
+chr <- "chr21"
 #ind ID
-indId <- "INDIVIDUAL"
+indId <- "AD173"
 #HQ ratio difference to accept link
 HQ_ratio <- 5
 #LQ ratio difference to accept link
@@ -42,7 +43,7 @@ minLQsupport <- 1 #this is just in case of using creatingHQ_LQvar links with tag
 # Quality filter parameters
 ###################
 
-minHQCells <- 25
+minHQCells <- 30
 minNbCells <- 10
 minNbLinks <- 5
 ##----------

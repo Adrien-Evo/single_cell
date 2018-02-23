@@ -36,7 +36,11 @@ creatingHQhapList <- function(l_counts_order) { #it takes subMatrix and subOrder
     
   }
   newHap <- newHap[,order(as.numeric(colnames(newHap)), decreasing = F)]
-  newHap <- newHap[which(newHap[,1] == 0),]
+  namesNewHap <- colnames(newHap)
+  newHap <- as.numeric(newHap[which(newHap[,1] == 0),])
+  names(newHap) <- namesNewHap
+  
+    
   #colnames(m_hap_tmp) <- names_subM
   return(newHap)
   
