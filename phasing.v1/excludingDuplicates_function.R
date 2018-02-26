@@ -14,13 +14,8 @@ excludingDuplicates <- function(l) { #takes as FUNCTIONS: creatingHapList, names
   #l_newHapList_tmp <- reducedFinalHapList
   
   #homogeneizes the list in terms of dataframe and all the HQ haps start with the config 0,1
-<<<<<<< HEAD
-  l_newHapList_tmp <- lapply(l_newHapList_tmp, FUN =  creatingHapList)
+  l_newHapList_tmp <- lapply(1:length(l_newHapList_tmp), function(x) { creatingHapList(x, l_newHapList_tmp) })
   l_uniqueHapListNames <- lapply(1:length(l_newHapList_tmp), function(x) {colnames(l_newHapList_tmp[[x]])})
-=======
-  l_newHapList_tmp <- lapply(l_newHapList_tmp, FUN =  creatingHapList) #changed by Dec 1
-  l_uniqueHapListNames <- lapply(l_newHapList_tmp, function(x) {colnames(x)}) #changed by Dec 2
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
   v_uniqueHapListNames <- namesHapListFunction(l_newHapList_tmp)
   
   if (length(l_newHapList_tmp) > 1) {
@@ -34,11 +29,7 @@ excludingDuplicates <- function(l) { #takes as FUNCTIONS: creatingHapList, names
         tmpNames <- l_uniqueHapListNames[[hapCount]]
         l_uniqueHapListNames[[hapCount]] <- 0
         
-<<<<<<< HEAD
         indexToCompare <- which(unlist(lapply(1:length(l_uniqueHapListNames), function(y) {sum(is.element(tmpNames, l_uniqueHapListNames[[y]]))})) > 0)
-=======
-        indexToCompare <- which(unlist(lapply(l_uniqueHapListNames, function(y) {sum(is.element(tmpNames, y))})) > 0) #changed by Dec 2
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
         
         if (length(indexToCompare) > 0) { #first hap of the list does overlap with other haps
           
@@ -61,11 +52,7 @@ excludingDuplicates <- function(l) { #takes as FUNCTIONS: creatingHapList, names
       
       l_newHapList_tmp <- l_finalHapListOfUniqueHaps
       #rm(l_finalHapListOfUniqueHaps)
-<<<<<<< HEAD
       l_uniqueHapListNames <- lapply(1:length(l_newHapList_tmp), function(x) {colnames(l_newHapList_tmp[[x]])})
-=======
-      l_uniqueHapListNames <- lapply(l_newHapList_tmp, function(x) {colnames(x)}) #changed by Dec 2
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
       v_uniqueHapListNames <- namesHapListFunction(l_newHapList_tmp)
     } #no more haps have overlapping sites
     return(l_newHapList_tmp)

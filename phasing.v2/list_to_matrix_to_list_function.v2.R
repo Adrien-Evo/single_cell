@@ -1,11 +1,7 @@
 #creating a list with HQ haplotypes
 creatingHQhapList <- function(l_counts_order) { #it takes subMatrix and subOrder and return a matrix with all haplotypes
   
-<<<<<<< HEAD
-  #l_counts_order <- links_and_order_tmp[[61]]
-=======
   #l_counts_order <- listHQ[[2]]
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
   
   for (col in 1:nrow(l_counts_order[[1]])) {
     
@@ -40,7 +36,11 @@ creatingHQhapList <- function(l_counts_order) { #it takes subMatrix and subOrder
     
   }
   newHap <- newHap[,order(as.numeric(colnames(newHap)), decreasing = F)]
-  newHap <- newHap[c(which(newHap[,1] == 0), which(newHap[,1] == 1)),]
+  namesNewHap <- colnames(newHap)
+  newHap <- as.numeric(newHap[which(newHap[,1] == 0),])
+  names(newHap) <- namesNewHap
+  
+    
   #colnames(m_hap_tmp) <- names_subM
   return(newHap)
   
@@ -127,28 +127,22 @@ creatingHapMatrixFromLinkCountMatrix <- function(linkCountM_subset, orderLinkCou
 #------------
 
 
-convertingIntoMatrix <- function(l, l_names) { #l = hapList; l_names=namesHapList
+convertingIntoMatrix <- function(l, l_names) { #l = hapList; l_names=namesHapList #changed last time Feb 23, 2018
   
-  tmp_matrixSortedHap <- matrix(rep(NA, length(l_names)*(2*length(l))), ncol=length(l_names))
+  tmp_matrixSortedHap <- matrix(rep(NA, length(l_names)*length(l)), ncol=length(l_names))
   colnames(tmp_matrixSortedHap) <- l_names
   
   i <- 1
-  j <- 2
   countHap <- 1
-  while (i < nrow(tmp_matrixSortedHap)) {
+  while (i <= nrow(tmp_matrixSortedHap)) {
     
-    tmp_matrixSortedHap[i, match(colnames(l[[countHap]]), colnames(tmp_matrixSortedHap))] <- as.vector(unlist(l[[countHap]][1,]))
-    tmp_matrixSortedHap[j, match(colnames(l[[countHap]]), colnames(tmp_matrixSortedHap))] <- as.vector(unlist(l[[countHap]][2,]))
-    i <- i+2
-    j <- j+2
+    tmp_matrixSortedHap[i, match(names(l[[countHap]]), colnames(tmp_matrixSortedHap))] <- as.numeric(unlist(l[[countHap]]))
+    
+    i <- i+1
     countHap <- countHap+1
   }
   
   return(tmp_matrixSortedHap)
 }
 ##--------------
-<<<<<<< HEAD
 #------------
-=======
-#------------
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16

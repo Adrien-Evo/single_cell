@@ -8,9 +8,8 @@
 creatingLQhaplotypes <- function(list_counts_order) {
   
   #pos <- 3
-  
-  #list_counts_order <- links_and_order_List[[28]] 
-  LQVarCoord <- unique(list_counts_order[[1]][,2]) # modified by Nov 27
+  #list_counts_order <- links_and_order_List[c(545)]
+  LQVarCoord <- as.character(unique(list_counts_order[[1]][,2])) # modified by Nov 27
   cat(paste("Analysing variant:", LQVarCoord, ".", sep=" "), file=outputLQPhasing, sep="\n", append=T)
   #LQVarCoord <- "25032267"
   #checks how many pairwise comb in the LQ matrix are related to HQ haplotypes and for how many sites within each HQ hap are covered by the LQ list
@@ -37,6 +36,16 @@ creatingLQhaplotypes <- function(list_counts_order) {
       perHQhap_NewLQPos_m <- list_counts_order[[1]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
       #subsetting the matrix with the links' order
       perHQhap_NewLQPos_order_m <- list_counts_order[[2]][which(list_counts_order[[1]][,3] %in% as.numeric(colnames(hapList[[hapNb]]))),] #modified by late Nov 27
+      
+      #TO TEST TOMORROW  - Jan 11
+      if (nrow(perHQhap_NewLQPos_m) > 5) {
+        
+        perHQhap_NewLQPos_m_tmp <- perHQhap_NewLQPos_m[order(abs(as.numeric(LQVarCoord)-as.numeric(as.character(perHQhap_NewLQPos_m[,3]))), decreasing = F)[1:5],] #added by Jan 8
+        perHQhap_NewLQPos_order_m_tmp <- perHQhap_NewLQPos_order_m[order(abs(as.numeric(LQVarCoord)-as.numeric(as.character(perHQhap_NewLQPos_m[,3]))), decreasing = F)[1:5],]  #added by Jan 8
+        perHQhap_NewLQPos_m <- perHQhap_NewLQPos_m_tmp[order(as.numeric(as.character(perHQhap_NewLQPos_m_tmp[,3]))),] #added by Jan 9
+        perHQhap_NewLQPos_order_m <- perHQhap_NewLQPos_order_m_tmp[order(as.numeric(as.character(perHQhap_NewLQPos_m_tmp[,3]))),] #added by Jan 9
+      }
+      
       vectorList <- list()
       
       for (col in 1:nrow(perHQhap_NewLQPos_m)) {
@@ -67,6 +76,10 @@ creatingLQhaplotypes <- function(list_counts_order) {
         
       }
       
+      #TO TEST TOMORROW - Jan 11
+      overlappingHap[intersectCov_closerHaps][which(overlappingHap[intersectCov_closerHaps] > 5)] <- 5
+      
+      
       # the first which does this - looking for the row number with a zero in the first overlapping site between the HQ hap and the new LQ hap that is not the LQ SITE
       #the following vector contain the combination of states followed by the first zero in the HQ haplotype
       hapZero_One <- as.vector(hapList[[hapNb]][which(hapList[[hapNb]][,colnames(hapList[[hapNb]])[colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])][1]] == 0 ),colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])])
@@ -84,9 +97,25 @@ creatingLQhaplotypes <- function(list_counts_order) {
       hapOne_One <- as.vector(hapList[[hapNb]][which(hapList[[hapNb]][,colnames(hapList[[hapNb]])[colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])][1]] == 1 ),colnames(hapList[[hapNb]]) %in% colnames(newHap[[countHapOver]])])
       hapOne_Two <- as.vector(newHap[[countHapOver]][which(newHap[[countHapOver]][,colnames(newHap[[countHapOver]])[colnames(newHap[[countHapOver]]) %in% colnames(hapList[[hapNb]])][1]] == 1 ),colnames(newHap[[countHapOver]]) %in% colnames(hapList[[hapNb]])])
       
+      compatibleComp_Zero_Zero <- sum(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}))
+      compatibleComp_Zero_One <- sum(apply(m <- rbind(hapZero_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}))
+      
       #here we compare the HQ hap with the LQ hap for the overlapping sites
-      corrPC_one[countHapOver] <- sum(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}))
-      corrPC_two[countHapOver] <- sum(apply(m <- rbind(hapOne_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}))
+      corrPC_one[countHapOver] <-  max(compatibleComp_Zero_Zero, compatibleComp_Zero_One)
+      
+      
+      if (which(c(compatibleComp_Zero_Zero, compatibleComp_Zero_One) == corrPC_one[countHapOver]) == 1) {
+        
+        indexToKeepNewHap <- as.vector(which(apply(m <- rbind(hapZero_One, hapZero_Two), 2, function(x) { is.element(x[1], x[2])}) == TRUE))+1
+        
+      } else if (which(c(compatibleComp_Zero_Zero, compatibleComp_Zero_One) == corrPC_one[countHapOver]) == 2) {
+        
+        indexToKeepNewHap <- as.vector(which(apply(m <- rbind(hapZero_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}) == TRUE))+1
+      }
+    
+      newHap[[countHapOver]] <- newHap[[countHapOver]][,c(1,indexToKeepNewHap)] #added by Jan 15
+      #corrPC_two[countHapOver] <- sum(apply(m <- rbind(hapOne_One, hapOne_Two), 2, function(x) { is.element(x[1], x[2])}))
+      
       countHapOver <- countHapOver+1
       
     } #close for across compatible HQ haps
@@ -94,47 +123,52 @@ creatingLQhaplotypes <- function(list_counts_order) {
     #corrPC_one/two contain the nb of EQUAL comparisons between the new and the HQ haplotype
     #if the nb of comparisons is >= 5 the LQ is kept and the LQ haploytpe built
     #if () { #modified by late Nov 27
-      if ((sum(corrPC_one)/sum(overlappingHap[intersectCov_closerHaps]) == 1) & (sum(corrPC_one) == sum(corrPC_two))) {
+    newHap <- newHap[which(corrPC_one/overlappingHap[intersectCov_closerHaps] >= 0.80)] #added Jan 15
+    intersectCov_closerHaps <- intersectCov_closerHaps[which(corrPC_one/overlappingHap[intersectCov_closerHaps] >= 0.80)] #added Jan 17
+    
+    if (length(newHap) > 0) { #CHANGE TOMORROW TO >= 0.8 added by Jan17
+      
+      finalHapMerged_Ordered <- list()
+      for (hapNb in 1:length(intersectCov_closerHaps)) {
         
-        finalHapMerged_Ordered <- list()
-        for (hapNb in 1:length(intersectCov_closerHaps)) {
+        #merging the full HQ with the lowHQ haplotype
+        if (length(setdiff(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))) >= 1) {
           
-          #merging the full HQ with the lowHQ haplotype
-          if (length(setdiff(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))) >= 1) {
-            
-            lastVarCommon <- intersect(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))[1]
-            varOut <- intersect(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))[-1]
-            index_varOut <- match(varOut, colnames(hapList[[intersectCov_closerHaps[hapNb]]]))
-            
-            finalHapMerged <- merge(newHap[[hapNb]], hapList[[intersectCov_closerHaps[hapNb]]][,-index_varOut], by = lastVarCommon)
-            finalHapMerged_Ordered[[hapNb]] <- finalHapMerged[,order(as.numeric(colnames(finalHapMerged)), decreasing = F)]
-            
-          } else if (length(setdiff(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))) == 0) {
-            
-            finalHapMerged_Ordered[[hapNb]] <- newHap[[hapNb]]
-          }
-          #return(finalHapMerged_Ordered)
+          lastVarCommon <- intersect(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))[1]
+          varOut <- intersect(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))[-1]
+          index_varOut <- match(varOut, colnames(hapList[[intersectCov_closerHaps[hapNb]]]))
+          
+          
+          #cat(paste("Length of index to rm:", length(index_varOut), sep=" "), file=outputLQPhasing, sep="\n", append=T) #add Jan 15
+          finalHapMerged <- merge(newHap[[hapNb]], hapList[[intersectCov_closerHaps[hapNb]]][,-index_varOut], by = lastVarCommon)
+          finalHapMerged_Ordered[[hapNb]] <- finalHapMerged[,order(as.numeric(colnames(finalHapMerged)), decreasing = F)]
+          
+        } else if (length(setdiff(colnames(hapList[[intersectCov_closerHaps[hapNb]]]),colnames(newHap[[hapNb]]))) == 0) {
+          
+          finalHapMerged_Ordered[[hapNb]] <- newHap[[hapNb]]
         }
-        
-        cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-        if (length(finalHapMerged_Ordered) == 1) {
-          
-          finalHap <- unique(finalHapMerged_Ordered)[[1]] #changed [[1]] Oct 4
-          
-        } else if (length(finalHapMerged_Ordered) > 1) {
-          
-          finalHap <- excludingDuplicates(unique(finalHapMerged_Ordered))[[1]]
-          
-        }
-        
-        return(finalHap)
-        
-      } else {
-        
-        cat(paste("Variant:", LQVarCoord, "not supported or ERROR: haplotypes differ.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-        # finalHap <- 0
-        # return(finalHap)
+        #return(finalHapMerged_Ordered)
       }
+      
+      cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+      if (length(finalHapMerged_Ordered) == 1) {
+        
+        finalHap <- unique(finalHapMerged_Ordered)[[1]] #changed [[1]] Oct 4
+        
+      } else if (length(finalHapMerged_Ordered) > 1) {
+        
+        finalHap <- excludingDuplicates(unique(finalHapMerged_Ordered))[[1]]
+        
+      }
+      
+      return(finalHap)
+      
+    } else {
+      
+      cat(paste("Variant:", LQVarCoord, "not supported or ERROR: hap length < 2 and total sites < 5.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+      # finalHap <- 0
+      # return(finalHap)
+    }
     # } else {
     #   
     #   cat(paste("Variant:", LQVarCoord, "not supported or ERROR: less than five comparisons.", sep=" "), file=outputLQPhasing, sep="\n", append=T)

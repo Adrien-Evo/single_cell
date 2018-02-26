@@ -6,14 +6,11 @@ pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/scriptsPhasing"
 
 source(paste(pathToScratch,"/functions_new_Oct27/computingLinks_functions.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/subsettingLinksMatrix_function.R", sep=""))
-<<<<<<< HEAD
 source(paste(pathToScratch,"/functions_new_Oct27/list_to_matrix_to_list_function.v1.R", sep=""))
-=======
-source(paste(pathToScratch,"/functions_new_Oct27/list_to_matrix_to_list_function.R", sep=""))
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
 source(paste(pathToScratch,"/functions_new_Oct27/creatingHapList_gettingHapNames_functions.v1.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/excludingDuplicates_function.v1.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/mergingHap_function.R", sep=""))
+source(paste(pathToScratch,"/functions_new_Oct27/building_final_haps_functions.R", sep=""))
 source(paste(pathToScratch,"/functions_new_Oct27/creatingHapByMerging.v1.R", sep=""))
 .libPaths( c("/.mounts/labs/awadallalab/private/flamaze/R_packages", .libPaths() ) )
 #library(Rmpi)
@@ -39,8 +36,6 @@ exportHQLinksTbl <- F
 exportLQLinksTbl <- F
 #export HQ link table
 printHQcountM <- T
-#rm outlier cells
-rmBadCells <- T
 #nb of LQ links supporting a HQ_HQ connection
 minLQsupport <- 1 #this is just in case of using creatingHQ_LQvar links with tags
 ##-----------
@@ -49,8 +44,8 @@ minLQsupport <- 1 #this is just in case of using creatingHQ_LQvar links with tag
 ###################
 
 minHQCells <- 25
-minNbCells <- 20
-minNbLinks <- 10
+minNbCells <- 10
+minNbLinks <- 5
 ##----------
 
 folderName <- paste(pathToScratch, "/",indId, "_", chr, "_QCvar", minHQCells, "_NbCells", minNbCells, "_NbLinks", minNbLinks, "_", dateToday, sep = "")
@@ -91,20 +86,20 @@ openGenoq <- data.frame(read.table(paste(prefox, "genoq", sep=""), header = F, n
 # names(matrixSortedHap) <- namesHapPos
 
 #keeping positions column
+#hetSNPsPos <- openHetSNPs[,2]
 varNames <- openGeno[,2]
+#openGeno <- openGeno[,-c(1,2)]
+#openGenoq <- openGenoq[,-c(1,2)]
+nbOfCellCovPerSite <- unlist(lapply(1:nrow(openGeno), function(x) { sum(!is.na(openGeno[x,])) }))
+#hist(nbOfCellCovPerSite)
+nbOfSitesPerCell <- unlist(lapply(3:ncol(openGeno), function(x) { sum(!is.na(openGeno[,x])) }))
+# #hist(nbOfSitesPerCell)
+quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.975))
+# #hist(nbOfSitesPerCell[which(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2])])
+rmCells <- which(!(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2]))
+openGeno <- openGeno[,-rmCells]
+openGenoq <- openGenoq[,-rmCells]
 
-if (rmBadCells) { #added by Dec 2
-  
-  nbOfCellCovPerSite <- unlist(lapply(1:nrow(openGeno), function(x) { sum(!is.na(openGeno[x,])) }))
-  #hist(nbOfCellCovPerSite)
-  nbOfSitesPerCell <- unlist(lapply(3:ncol(openGeno), function(x) { sum(!is.na(openGeno[,x])) }))
-  # #hist(nbOfSitesPerCell)
-  quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.975))
-  # #hist(nbOfSitesPerCell[which(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2])])
-  rmCells <- which(!(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2]))
-  openGeno <- openGeno[,-rmCells]
-  openGenoq <- openGenoq[,-rmCells]
-}  #added by Dec 2
 openGeno <- openGeno[,-c(1,2)]
 openGenoq <- openGenoq[,-c(1,2)]
 
@@ -203,18 +198,14 @@ cat(paste("HQ haplotypes list contains:", length(hapList), "HQ haplotypes.", sep
 namesHapList <- namesHapListFunction(hapList)
 rm(links_and_order_tmp)
 rm(tmpListToRm)
-# rm(subMatrix)
-# rm(subOrder)
+rm(subMatrix)
+rm(subOrder)
 rm(uniqueHap)
-#rm(m_hap)
+rm(m_hap)
 rm(l_hap)
 
 #convert all elements of the hapList into the same type of objects
-<<<<<<< HEAD
 hapList <- mclapply(hapList, FUN = creatingHapList, mc.cores = nbOfCores) # changed by Dec 1 PROBABLY REMOVE!!!!
-=======
-hapList <- mclapply(hapList, FUN = creatingHapList, mc.cores = nbOfCores) # changed by Dec 1
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
 
 if (exportMatPhaseONe == T) {
   #COMMENT
@@ -238,7 +229,7 @@ if (exportMatPhaseONe == T) {
 minHQCells <- 10
 minNbCells <- 4
 minNbLinks <- 2 
-
+ 
 #COMMENT
 cat("LQvar-HQhaplotype links will be done with the following QC: ", file=mainOutput, sep="\n", append = T)
 cat(paste("Number of cells with variant genotyped at GQ > 20: ", minHQCells, ".", sep = ""), file=mainOutput, sep="\n", append = T)
@@ -249,7 +240,7 @@ varInHQhaps <- namesHapList
 rm(namesHapList)
 #COMMENT
 cat("Creating cluster for LQ-HQhap links compution...", file=mainOutput, sep="\n", append = T)
-
+ 
 #initializing cluster
 LQ_HQ_links_list <- list()
 #openGenoq, openGeno, varNames, outputLQPhasing, minHQCells
@@ -257,11 +248,11 @@ LQ_HQ_links_list <- mclapply(varNames, function(x) { subsettingByQuality_computi
 #change from varNames to varNames-HQvar
 #COMMENT
 cat("LQvar-HQhap links computation... DONE.", file=mainOutput, sep="\n", append = T)
-
+ 
 #-- NEW OCT 25
 #COMMENT
 cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
-
+ 
 links_and_order_List <- list()
 links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores)
 #COMMENT
@@ -270,11 +261,7 @@ links_and_order_List <- links_and_order_List[!sapply(links_and_order_List, is.nu
 cat(paste0("Links and order list size: ", length(links_and_order_List), "."), file=mainOutput, sep="\n", append = T) #added by late Nov 27
 #---
 if (exportLQLinksTbl) {
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
   #merge matrices over all the LQ var into a single matrix
   subMatrix <- do.call(rbind, (lapply(links_and_order_List, "[[", 1))) #modified by Oct 26
   #subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by Oct 26
@@ -287,11 +274,7 @@ if (exportLQLinksTbl) {
   #COMMENT
   cat("Exporting matrix with supported LQvar-HQvar links.", file=mainOutput, sep="\n", append = T)
   write.table(subMatrix, file=phaseTwoLinksOutput, quote = F, row.names = F, col.names = T, sep="\t")
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
 }
 rm(LQ_HQ_links_list) #modified by Oct 25 
 # ##########################
@@ -300,7 +283,7 @@ rm(LQ_HQ_links_list) #modified by Oct 25
 # ###########################
 #COMMENT
 cat("Building up LQvar-HQhap connection.", file=mainOutput, sep="\n", append = T)
-
+ 
 #computing the abs number of closer haplotypes
 nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
 #COMMENT
@@ -322,28 +305,23 @@ rm(finalHapList)
 # cl <- makeCluster(no_cores) #modified by Oct 27
 # clusterExport(cl, c("reducedFinalHapList", "creatingHapList")) #modified by Oct 27
 cleanReducedList <- list() #modified by Oct 27
-<<<<<<< HEAD
 cleanReducedList <- mclapply(reducedFinalHapList, FUN = creatingHapList, mc.cores = nbOfCores) #modified by Dec 1
-
-=======
-cleanReducedList <- mclapply(reducedFinalHapList, FUN =  creatingHapList, mc.cores = nbOfCores) #modified by Dec 1
  
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
 #merging the HQhaps with the LQ_HQhap links
 mergedHapList <- excludingDuplicates(cleanReducedList)
 #COMMENT
 cat("Merging all LQvar-HQhaplotypes ... DONE.", file=mainOutput, sep="\n", append = T)
-
+ 
 if (length(mergedHapList) > 1) {
-  #COMMENT
-  cat("Multiple haplotypes still exist. ERROR.", file=mainOutput, sep="\n", append = T)
-  
+#COMMENT
+cat("Multiple haplotypes still exist. ERROR.", file=mainOutput, sep="\n", append = T)
+   
 } else if (length(mergedHapList) == 1) {
-  #COMMENT
-  cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
-  #ordering the final hap
-  matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))] 
-  write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
+#COMMENT
+cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
+#ordering the final hap
+matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))] 
+write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
   
 }
 

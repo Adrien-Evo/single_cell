@@ -1,54 +1,3 @@
-#creating a list with HQ haplotypes
-creatingHQhapList <- function(l_counts_order) { #it takes subMatrix and subOrder and return a matrix with all haplotypes
-  
-<<<<<<< HEAD
-  #l_counts_order <- links_and_order_tmp[[61]]
-=======
-  #l_counts_order <- listHQ[[2]]
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
-  
-  for (col in 1:nrow(l_counts_order[[1]])) {
-    
-    vectorList <- list()
-    focalPosFirst <- as.character(l_counts_order[[1]][col,2])
-    focalPosSec <- as.character(l_counts_order[[1]][col,3])
-    linkSupported <- l_counts_order[[2]][col,][1:2]
-    # vectorHap_one <- rep(NA, length(names_subM))
-    # vectorHap_two <- rep(NA, length(names_subM))
-    
-    
-    if (sum(is.element(1, linkSupported) & is.element(4, linkSupported))) {
-      
-      vectorList[[col]] <- rbind(c(0,0),c(1,1))
-      
-      
-    } else if (sum(is.element(2, linkSupported) & is.element(3, linkSupported))) {
-      
-      vectorList[[col]] <- rbind(c(0,1),c(1,0))
-    }
-    colnames(vectorList[[col]]) <- c(focalPosFirst,focalPosSec)
-    
-
-    if (col == 1) {
-      
-      newHap <- vectorList[[col]]
-      
-    } else {
-      
-    newHap <- merge(newHap, vectorList[[col]], by = focalPosFirst)
-    }
-    
-  }
-  newHap <- newHap[,order(as.numeric(colnames(newHap)), decreasing = F)]
-  newHap <- newHap[c(which(newHap[,1] == 0), which(newHap[,1] == 1)),]
-  #colnames(m_hap_tmp) <- names_subM
-  return(newHap)
-  
-}
-##-------------
-#-------
-
-
 creatingHapListFromLinkCountMatrix <- function(haplotypeMatrix) {
   
   ## converting from matrix to list and removing all the NAs
@@ -147,8 +96,4 @@ convertingIntoMatrix <- function(l, l_names) { #l = hapList; l_names=namesHapLis
   return(tmp_matrixSortedHap)
 }
 ##--------------
-<<<<<<< HEAD
 #------------
-=======
-#------------
->>>>>>> 7f3eaabb039066a8eac7b49e27c5f0ac6afdbf16
