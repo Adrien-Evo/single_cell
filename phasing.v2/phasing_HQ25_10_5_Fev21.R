@@ -21,7 +21,7 @@ nbOfCores <- 4L
 #chromosome
 chr <- "chr21"
 #ind ID
-indId <- "AD173"
+indId <- "AD385"
 #HQ ratio difference to accept link
 HQ_ratio <- 5
 #LQ ratio difference to accept link
