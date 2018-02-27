@@ -4,12 +4,12 @@
 pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/scriptsPhasing"
 #pathToScratch <- "/Users/isabelalves/Documents/OICR/singleCells/"
 
-source(paste(pathToScratch,"/functions_v2/computingLinks_functions.R", sep=""))
-source(paste(pathToScratch,"/functions_v2/subsettingLinksMatrix_function.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/computingLinks_functions.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/subsettingLinksMatrix_function.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/list_to_matrix_to_list_function.v2.R", sep=""))
-source(paste(pathToScratch,"/functions_v2/creatingHapList_gettingHapNames_functions.v1.R", sep=""))
-source(paste(pathToScratch,"/functions_v2/excludingDuplicates_function.v1.R", sep=""))
-source(paste(pathToScratch,"/functions_v2/mergingHap_function.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/creatingHapList_gettingHapNames_functions.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/excludingDuplicates_function.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/mergingHap_function.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v2.R", sep=""))
 .libPaths( c("/.mounts/labs/awadallalab/private/flamaze/R_packages", .libPaths() ) )
 #library(Rmpi)
@@ -27,7 +27,7 @@ HQ_ratio <- 5
 #LQ ratio difference to accept link
 LQ_ratio <- 3
 #proportion of closer HQhaps
-propHQhaps <- 0.10
+propHQhaps <- 1
 #export HQ haplotypes
 exportMatPhaseONe <- T
 #export HQ links table
@@ -43,7 +43,7 @@ minLQsupport <- 1 #this is just in case of using creatingHQ_LQvar links with tag
 # Quality filter parameters
 ###################
 
-minHQCells <- 30
+minHQCells <- 25
 minNbCells <- 10
 minNbLinks <- 5
 ##----------
@@ -74,6 +74,9 @@ LQlinksLog <- paste(folderName, "/", indId, ".",chr, ".LQvar_HQhapLinks", minHQC
 cat("", file=LQlinksLog, sep = "")
 #final haplotype file
 finalCompleteHapFile <- paste(folderName, "/", indId, ".",chr, ".finalHapNeighborHaps_HQ", minHQCells, "_NbCells", minNbCells, "_NbLinks", minNbLinks,".txt", sep="")
+#final LQ variants anchoring HQ haplotypes
+LQ_HQ_matrixFile <- paste(folderName, "/", indId, ".",chr, ".LQvar_HQhap_matrix_HQ", minHQCells, "_NbCells", minNbCells, "_NbLinks", minNbLinks,".txt", sep="")
+
 ##-----------
 
 #opening geno and genoq files generated from subsetting the SC vcf file by extracting hetSNPsList of sites
@@ -291,8 +294,9 @@ if (length(hapList) >= 5) { #added Jan 17
 #COMMENT
 cat("Creating cluster for LQvar-HQhap phasing...", file=mainOutput, sep="\n", append = T)
 ## Calculate the number of cores
-finalHapList <- list()
-finalHapList <- mclapply(links_and_order_List, function(varPos) { creatingLQhaplotypes(varPos) }, mc.cores = nbOfCores)
+cat(paste("LQVar", paste0("HQ_", 1:length(hapList), collapse = "\t"), sep = "\t"), file=LQ_HQ_matrixFile, sep="\n")
+
+mclapply(links_and_order_List, function(varPos) { creatingLQhaplotypes(varPos) }, mc.cores = nbOfCores)
 cat(paste0("final HapList size in bytes is: ", object.size(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by Jan 24
 rm(links_and_order_List)
 
