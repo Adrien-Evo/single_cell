@@ -118,7 +118,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
       
     
       cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-      cat(paste(LQVarCoord, paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), file=LQ_HQ_matrixFile, sep="\n", append = T)
+      cat(paste(LQVarCoord, paste0(paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), "\n", collapse = ""), file=LQ_HQ_matrixFile, sep="", append = T)
 
       
     } else {

@@ -1,16 +1,18 @@
 require(cluster)
 
 pathToScratch <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/LQvar_HQhap_table"
+pathToOutputFolder <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHaps"
 fileNames <- list.files(pathToScratch, pattern="*.txt", full.names=TRUE)
-openMatrix <- read.table(fileNames[1], header = T)
+openMatrix <- read.table(fileNames[2], header = T)
 #computing distances with gower 
 d <- daisy(openMatrix[,2:ncol(openMatrix)], metric = "gower")
 #replacing the NA entries in the distances by 0.5
 d[is.na(d)] <- 0.5
 #identifying clusters
 clusters <- hclust(d)
+#plot(clusters)
 #retrieving indexes of the rows belonging to each cluster
-indx <- cutree(clusters, 3)
+indx <- cutree(clusters, 5)
 #retrieving clusters' ids and amount of var supporting each cluster
 t_indx <- table(indx)
 #retreving the cluster ids supported by the largest amount of variants
@@ -24,16 +26,38 @@ config_haps_two <- c(0,slideFunct(as.numeric(names(l_config_two)),1,1))
 
 if (sum(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { is.element(x[1], x[2])})) == length(config_haps_one)) {
   
+  if (names(l_config_one)[1] == "1") {
+    
+    HQhapOne <- 1
+    HQhapTwo <- 2
+    
+  } else if (names(l_config_one)[1] == "-1") {
+    
+    HQhapOne <- 2
+    HQhapTwo <- 1
+  }
   
   #swaping HQ haplotypes according to the inferred configuration
   l_tmp_hapList <- lapply(which(config_haps_one == -1), FUN = convertHapList)
-  hapList[which(config_haps == -1)] <- l_tmp_hapList
+  hapList[which(config_haps_one == -1)] <- l_tmp_hapList
   #merging HQhap with unlist
   phasedHapList <- unlist(hapList)
+  
+  LQvar_in_cis <- rep(0,length(openMatrix[which(indx==HQhapOne), 1]))
+  LQvar_in_trans <- rep(1,length(openMatrix[which(indx==HQhapTwo), 1]))
+  names(LQvar_in_cis) <- openMatrix[which(indx==HQhapOne), 1]
+  names(LQvar_in_trans) <- openMatrix[which(indx==HQhapTwo), 1]
+  
+  phasedHapList <- c(phasedHapList, LQvar_in_cis, LQvar_in_trans)
+  
   altHap <- rep(0, length(phasedHapList))
   altHap[which(phasedHapList == 0)] <- 1
-  phasedHQhaplotypes <- rbind(hapList, altHap)
+  phasedHQhaplotypes <- rbind(phasedHapList, altHap)
   colnames(phasedHQhaplotypes) <- names(phasedHapList)
+  
+  
+  o_phasedHQhaplotypes <- phasedHQhaplotypes[,order(as.numeric(colnames(phasedHQhaplotypes)))]
+  write.table(o_phasedHQhaplotypes, file=paste0(pathToOutputFolder,"/AD173.chr21.finalHapNeighborHaps_HQ25_NbCells10_NbLinks5.txt"), quote = F, row.names = F, col.names = T, sep = "\t")
   
   #merging the LQvar in the third cluster
   apply(m <- rbind(varLQ[which(!is.na(varLQ))], as.numeric(names(l_config_two[which(!is.na(varLQ))]))), 2, function(x) { is.element(x[1], x[2])})
@@ -46,7 +70,11 @@ if (sum(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { is.
 }
 
 
+openHQ_old <- read.table("C:/Users/ialves/Documents/Isabel_OICR/single_cell/phasing.v2/AD173.chr21.finalHapNeighborHaps_HQ25_NbCells10_NbLinks5.txt", header = T)
+colnames(openHQ_old) <- scan("C:/Users/ialves/Documents/Isabel_OICR/single_cell/phasing.v2/AD173.chr21.finalHapNeighborHaps_HQ25_NbCells10_NbLinks5.txt", what = numeric(), nlines = 1)
 
+
+sum(apply(m <- rbind(o_phasedHQhaplotypes[1,intersect(colnames(o_phasedHQhaplotypes),colnames(openHQ_old))], openHQ_old[1,intersect(colnames(o_phasedHQhaplotypes),colnames(openHQ_old))]), 2, function(x) { is.element(x[1], x[2])}))/length(intersect(colnames(o_phasedHQhaplotypes),colnames(openHQ_old)))
 
 ######################
 ##
