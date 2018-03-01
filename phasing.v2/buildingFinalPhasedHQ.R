@@ -1,6 +1,8 @@
 require(cluster)
 
-openMatrix <- read.table(paste(pathToScratch, "AD173_chr21_QCvar25_NbCells10_NbLinks5_Feb22/AD173.chr21.LQvar_HQhap_matrix_HQ25_NbCells10_NbLinks5.txt", sep = "/"), header = T)
+pathToScratch <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/LQvar_HQhap_table"
+fileNames <- list.files(pathToScratch, pattern="*.txt", full.names=TRUE)
+openMatrix <- read.table(fileNames[1], header = T)
 #computing distances with gower 
 d <- daisy(openMatrix[,2:ncol(openMatrix)], metric = "gower")
 #replacing the NA entries in the distances by 0.5

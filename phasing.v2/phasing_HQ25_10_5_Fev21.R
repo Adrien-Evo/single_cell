@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 
+args = commandArgs(trailingOnly=TRUE)
 #including functions
 pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/scriptsPhasing"
 #pathToScratch <- "/Users/isabelalves/Documents/OICR/singleCells/"
+
 
 source(paste(pathToScratch,"/functions_v2/computingLinks_functions.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/subsettingLinksMatrix_function.v2.R", sep=""))
@@ -10,18 +12,18 @@ source(paste(pathToScratch,"/functions_v2/list_to_matrix_to_list_function.v2.R",
 source(paste(pathToScratch,"/functions_v2/creatingHapList_gettingHapNames_functions.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/excludingDuplicates_function.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/mergingHap_function.v2.R", sep=""))
-source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v2.R", sep=""))
+source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v3.R", sep=""))
 .libPaths( c("/.mounts/labs/awadallalab/private/flamaze/R_packages", .libPaths() ) )
 #library(Rmpi)
 library(parallel)
 #dateToday <- "TODAY"
-dateToday <- "Feb22"
-nbOfCores <- 4L
+dateToday <- args[2]
+nbOfCores <- 10L
 
 #chromosome
-chr <- "chr21"
+chr <- args[3]
 #ind ID
-indId <- "AD385"
+indId <- args[1]
 #HQ ratio difference to accept link
 HQ_ratio <- 5
 #LQ ratio difference to accept link
@@ -284,88 +286,89 @@ rm(LQ_HQ_links_list) #modified by Oct 25
 cat("Building up LQvar-HQhap connection.", file=mainOutput, sep="\n", append = T)
  
 #computing the abs number of closer haplotypes
-if (length(hapList) >= 5) { #added Jan 17
+nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
+if (nbOfCloserHQhap == 0) {
   
-  nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
-} else { #added Jan 17
-  nbOfCloserHQhap <- 1 #added Jan 17
-} #added Jan 17
+  nbOfCloserHQhap <- 1
+  
+}
 
 #COMMENT
 cat("Creating cluster for LQvar-HQhap phasing...", file=mainOutput, sep="\n", append = T)
 ## Calculate the number of cores
 cat(paste("LQVar", paste0("HQ_", 1:length(hapList), collapse = "\t"), sep = "\t"), file=LQ_HQ_matrixFile, sep="\n")
 
-mclapply(links_and_order_List, function(varPos) { creatingLQhaplotypes(varPos) }, mc.cores = nbOfCores)
-cat(paste0("final HapList size in bytes is: ", object.size(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by Jan 24
-rm(links_and_order_List)
+tmpListToRm <- mclapply(links_and_order_List, function(varPos) { creatingLQhaplotypes(varPos) }, mc.cores = nbOfCores)
+cat("Computation of phasing done!Needs to assemble!", file=mainOutput, sep="\n", append = T)
+# cat(paste0("final HapList size in bytes is: ", object.size(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by Jan 24
+# rm(links_and_order_List)
+# 
+# if (length(finalHapList) == 0) { #added Jan 19
+#   
+#   cat("ERROR: LQvar-HQhap phasing failed.", file=mainOutput, sep="\n", append = T) #added Jan 19
+#   
+# } else { #added Jan 19
+#   
+#   #COMMENT
+#   cat("LQvar-HQhap phasing... DONE.", file=mainOutput, sep="\n", append = T)
+#   #-
+#   #removing empty entries from the finalHapList
+#   # reducedFinalHapList <- list()
+#   # reducedFinalHapList <- finalHapList[!sapply(finalHapList, is.null)] #modified by Oct 26
+#   # rm(finalHapList)
+#   #organizing the list
+#   ## Calculate the number of cores
+#   # no_cores <- detectCores() #modified by Oct 27
+#   # cl <- makeCluster(no_cores) #modified by Oct 27
+#   # clusterExport(cl, c("reducedFinalHapList", "creatingHapList")) #modified by Oct 27
+#   finalHapList <- finalHapList[!sapply(finalHapList, is.null)] #added by Jan 24
+#   finalHapList <-  mclapply(finalHapList, FUN = creatingHapList, mc.cores = nbOfCores) #modified by Jan 24
+#   cat(paste0("Clean final hap list size: ", length(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by late Nov 27
+#   cat(paste0("Clean final hap list size in bytes is: ", object.size(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by Jan 24
+#   
+#   # cleanReducedList <- list() #modified by Oct 27
+#   # cleanReducedList <- mclapply(reducedFinalHapList, FUN = creatingHapList, mc.cores = nbOfCores) #modified by Dec 1
+#    
+#   #merging the HQhaps with the LQ_HQhap links
+#   mergedHapList <- excludingDuplicates(finalHapList)
+#   #COMMENT
+#   cat("Merging all LQvar-HQhaplotypes ... DONE.", file=mainOutput, sep="\n", append = T)
+#   cat(paste0("Final hap list contains: ", length(mergedHapList), "haplotypes."), file=mainOutput, sep="\n", append = T) 
+#   rm(finalHapList) #added by Jan 24
+#   if (length(mergedHapList) > 1) {
+#   
+#     #TEST what 's below
+#     maxHapSize <- max(lengths(mergedHapList))
+#     id_maxHapSize <- which(lengths(mergedHapList) == maxHapSize)
+#   
+#     if (length(mergedHapList) < 10 & lengths(mergedHapList)[id_maxHapSize] > 2*sum(lengths(mergedHapList)[-id_maxHapSize])) {
+#   
+#       mergedHapList <- list(mergedHapList[[id_maxHapSize]])
+#       #COMMENT
+#       cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
+#       #ordering the final hap
+#       matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))]
+#       write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
+#   
+#     } else {
+#       
+#       #COMMENT
+#       cat("Multiple haplotypes still exist. ERROR.", file=mainOutput, sep="\n", append = T)
+#       
+#     }
+#   
+#      
+#   } else if (length(mergedHapList) == 1) {
+#     
+#     #COMMENT
+#     cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
+#     #ordering the final hap
+#     matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))] 
+#     write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
+#     
+#   }
 
-if (length(finalHapList) == 0) { #added Jan 19
-  
-  cat("ERROR: LQvar-HQhap phasing failed.", file=mainOutput, sep="\n", append = T) #added Jan 19
-  
-} else { #added Jan 19
-  
-  #COMMENT
-  cat("LQvar-HQhap phasing... DONE.", file=mainOutput, sep="\n", append = T)
-  #-
-  #removing empty entries from the finalHapList
-  # reducedFinalHapList <- list()
-  # reducedFinalHapList <- finalHapList[!sapply(finalHapList, is.null)] #modified by Oct 26
-  # rm(finalHapList)
-  #organizing the list
-  ## Calculate the number of cores
-  # no_cores <- detectCores() #modified by Oct 27
-  # cl <- makeCluster(no_cores) #modified by Oct 27
-  # clusterExport(cl, c("reducedFinalHapList", "creatingHapList")) #modified by Oct 27
-  finalHapList <- finalHapList[!sapply(finalHapList, is.null)] #added by Jan 24
-  finalHapList <-  mclapply(finalHapList, FUN = creatingHapList, mc.cores = nbOfCores) #modified by Jan 24
-  cat(paste0("Clean final hap list size: ", length(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by late Nov 27
-  cat(paste0("Clean final hap list size in bytes is: ", object.size(finalHapList), "."), file=mainOutput, sep="\n", append = T) #added by Jan 24
-  
-  # cleanReducedList <- list() #modified by Oct 27
-  # cleanReducedList <- mclapply(reducedFinalHapList, FUN = creatingHapList, mc.cores = nbOfCores) #modified by Dec 1
-   
-  #merging the HQhaps with the LQ_HQhap links
-  mergedHapList <- excludingDuplicates(finalHapList)
-  #COMMENT
-  cat("Merging all LQvar-HQhaplotypes ... DONE.", file=mainOutput, sep="\n", append = T)
-  cat(paste0("Final hap list contains: ", length(mergedHapList), "haplotypes."), file=mainOutput, sep="\n", append = T) 
-  rm(finalHapList) #added by Jan 24
-  if (length(mergedHapList) > 1) {
-  
-    #TEST what 's below
-    maxHapSize <- max(lengths(mergedHapList))
-    id_maxHapSize <- which(lengths(mergedHapList) == maxHapSize)
-  
-    if (length(mergedHapList) < 10 & lengths(mergedHapList)[id_maxHapSize] > 2*sum(lengths(mergedHapList)[-id_maxHapSize])) {
-  
-      mergedHapList <- list(mergedHapList[[id_maxHapSize]])
-      #COMMENT
-      cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
-      #ordering the final hap
-      matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))]
-      write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
-  
-    } else {
-      
-      #COMMENT
-      cat("Multiple haplotypes still exist. ERROR.", file=mainOutput, sep="\n", append = T)
-      
-    }
-  
-     
-  } else if (length(mergedHapList) == 1) {
-    
-    #COMMENT
-    cat("Parent phasing SUCCESSFUL. Well done!", file=mainOutput, sep="\n", append = T)
-    #ordering the final hap
-    matrixFinalHap <- mergedHapList[[1]][,match(sort(as.numeric(names(mergedHapList[[1]]))), names(mergedHapList[[1]]))] 
-    write.table(matrixFinalHap, file=finalCompleteHapFile, quote = F, row.names = F, col.names = T, sep = "\t")
-    
-  }
-
-} #added Jan 19
+#} #added Jan 19
 #####################
 ##
 ## End of the main function
