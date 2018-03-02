@@ -118,14 +118,11 @@ creatingLQhaplotypes <- function(list_counts_order) {
       
       
       cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
-<<<<<<< HEAD
-      cat(paste(LQVarCoord, paste0(paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), "\n", collapse = ""), file=LQ_HQ_matrixFile, sep="", append = T)
+      #generating random file
+      tmpfile <- paste(sample(c(LETTERS,letters, 0:9), 20, replace=TRUE), collapse="") #changed by March 2
+      cat(paste(LQVarCoord, paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), file=paste0(paste(pathToTmp, tmpfile, sep = "/"), ".txt"), sep="\n", append = T) #changed by March 2
 
-=======
-      cat(paste(LQVarCoord, paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), file=LQ_HQ_matrixFile, sep="\n", append = T)
-      
->>>>>>> 3e6ee59053dde34ace3f9d16bf261487e3537fef
-      
+
     } else {
       
       cat(paste("Variant:", LQVarCoord, "not supported or ERROR: hap length < 2 and total sites < 5.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
