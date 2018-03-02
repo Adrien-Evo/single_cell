@@ -260,7 +260,7 @@ cat("Computation of phasing done! Printing LQvar HQhap matrix!", file=mainOutput
 setwd(pathToTmp)
 system(paste0("cat *.txt > ", LQ_HQ_matrixFile))
 setwd(folderName)
-unlink(x, recursive = T)
+unlink(pathToTmp, recursive = T)
 cat("LQvar HQhap matrix written. Tmp files deleted. All good.", file=mainOutput, sep="\n", append = T)
 
 
