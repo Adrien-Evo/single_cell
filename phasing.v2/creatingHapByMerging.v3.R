@@ -22,7 +22,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
   closerHaps <- order(sapply(1:length(hapList), function(x) { min(abs(as.numeric(LQVarCoord)-as.numeric(names(hapList[[x]])))) } ))[1:nbOfCloserHQhap] #modified by Jan 8
   intersectCov_closerHaps <- intersect(closerHaps, indexOverlappingHap)
   LQ_HQ_tags <- rep(NA, length(overlappingHap))
-
+  
   overlappingHap[intersectCov_closerHaps][which(overlappingHap[intersectCov_closerHaps] > 5)] <- 5
   #print(intersectCov_closerHaps)
   
@@ -91,7 +91,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
       #the following vector contain the combination of states followed by the first zero in the LQ haplotype
       LQ_HQhap_zero <- as.vector(newHap[[countHapOver]][1, colnames(newHap[[countHapOver]]) %in% names(hapList[[hapNb]])])
       #example:
-
+      
       similarity <- sum(apply(m <- rbind(HQHap_zero, LQ_HQhap_zero), 2, function(x) { is.element(x[1], x[2])}))/overlappingHap[hapNb]
       
       if (similarity < 0.20) {
@@ -116,10 +116,15 @@ creatingLQhaplotypes <- function(list_counts_order) {
     
     if (sum(is.na(LQ_HQ_tags))/length(LQ_HQ_tags) != 0) { #CHANGE TOMORROW TO >= 0.8 added by Jan17
       
-    
+      
       cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)
+<<<<<<< HEAD
       cat(paste(LQVarCoord, paste0(paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), "\n", collapse = ""), file=LQ_HQ_matrixFile, sep="", append = T)
 
+=======
+      cat(paste(LQVarCoord, paste0(LQ_HQ_tags, collapse = "\t"), sep = "\t"), file=LQ_HQ_matrixFile, sep="\n", append = T)
+      
+>>>>>>> 3e6ee59053dde34ace3f9d16bf261487e3537fef
       
     } else {
       
@@ -127,7 +132,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
       # finalHap <- 0
       # return(finalHap)
     }
-
+    
   } else {
     
     cat(paste("Variant:", LQVarCoord, "not supported. ERROR: not enough HQ haplotypes", sep=" "), file=outputLQPhasing, sep="\n", append=T)

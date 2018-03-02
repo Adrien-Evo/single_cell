@@ -23,7 +23,11 @@ nbOfCores <- 10L
 #chromosome
 chr <- args[3]
 #ind ID
+<<<<<<< HEAD
 indId <- args[1]
+=======
+indId <- "AD173"
+>>>>>>> 3e6ee59053dde34ace3f9d16bf261487e3537fef
 #HQ ratio difference to accept link
 HQ_ratio <- 5
 #LQ ratio difference to accept link
@@ -286,11 +290,18 @@ rm(LQ_HQ_links_list) #modified by Oct 25
 cat("Building up LQvar-HQhap connection.", file=mainOutput, sep="\n", append = T)
  
 #computing the abs number of closer haplotypes
+<<<<<<< HEAD
 nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
 if (nbOfCloserHQhap == 0) {
   
   nbOfCloserHQhap <- 1
   
+=======
+
+nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
+if (nbOfCloserHQhap == 0) { #in case the nb of HQhaps is too small and/or the chosen prop.
+  nbOfCloserHQhap <- 1
+>>>>>>> 3e6ee59053dde34ace3f9d16bf261487e3537fef
 }
 
 #COMMENT
