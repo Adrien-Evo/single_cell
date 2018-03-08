@@ -114,7 +114,7 @@ creatingLQhaplotypes <- function(list_counts_order) {
     } #close for across compatible HQ haps
     
     
-    if (sum(is.na(LQ_HQ_tags))/length(LQ_HQ_tags) != 0) { #CHANGE TOMORROW TO >= 0.8 added by Jan17
+    if (sum(is.na(LQ_HQ_tags))/length(LQ_HQ_tags) < 1) { #CHANGE TOMORROW TO >= 0.8 added by Jan17
       
       
       cat(paste("Variant:", LQVarCoord, "kept.", sep=" "), file=outputLQPhasing, sep="\n", append=T)

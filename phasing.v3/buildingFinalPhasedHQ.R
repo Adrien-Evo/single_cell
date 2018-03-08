@@ -1,14 +1,14 @@
 require(cluster)
 
-pathToScratch <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/LQvar_HQhap_table"
-pathToHQHQ_m <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/HQhap_matrix"
-pathToOutputFolder <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHaps"
-pathToFinalHapMerging <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHapMerging"
+pathToScratch <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/LQvar_HQhap_table_chr10_HQ25_10_5_Mar1"
+pathToHQHQ_m <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/HQhap_matrix_chr10_HQ25_10_5_Mar1"
+pathToOutputFolder <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHaps_chr10_HQ25_10_5_Mar1"
+pathToFinalHapMerging <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHapMerging_chr10_HQ25_10_5_Jan29"
 fileNames <- list.files(pathToScratch, pattern="*.txt", full.names=TRUE)
 
 for (file in 1:length(fileNames)) {
   
-  #file <- 3
+  #file <- 6
   sufixHQ_HQmatrix <- "HQhapMatrix25_NbCells10_NbLinks5"
   sufixPhasedHap <- "finalHapNeighborHaps_HQ25_NbCells10_NbLinks5"
   idTag <- unlist(strsplit(unlist(strsplit(fileNames[file], split = "/"))[length(unlist(strsplit(fileNames[file], split = "/")))], split="\\."))[1]
@@ -29,7 +29,7 @@ for (file in 1:length(fileNames)) {
   clusters <- hclust(d)
   
   countClusters <- 2
-  while (countClusters < 10) {
+  while (countClusters < 15) {
       
     #retrieving indexes of the rows belonging to each cluster
     indx <- cutree(clusters, countClusters)

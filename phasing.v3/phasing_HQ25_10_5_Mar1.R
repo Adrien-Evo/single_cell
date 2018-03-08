@@ -149,9 +149,12 @@ links_and_order_tmp <- links_and_order_tmp[!sapply(links_and_order_tmp, is.null)
 
 l_hap <- mclapply(links_and_order_tmp, FUN = creatingHQhapList, mc.cores = nbOfCores)
 
-#generating a list of unique merged haplotypes: FINAL config
-tmpListToRm <- excludingDuplicates(l_hap)
-
+if (length(l_hap) > 1) { #added by March 7
+  #generating a list of unique merged haplotypes: FINAL config
+  tmpListToRm <- excludingDuplicates(l_hap)
+} else { #added by March 7
+  tmpListToRm <- l_hap
+}
 
 
 hapList <- tmpListToRm
@@ -170,8 +173,17 @@ if (exportMatPhaseONe == T) {
   #converting hapList into matrix to EXPORT
   finalHapMatrix <- convertingIntoMatrix(hapList,namesHapList)
   finalHapMatrix <- finalHapMatrix[,order(as.numeric(colnames(finalHapMatrix)))]
-  #save final haplotype matrix
-  write.table(finalHapMatrix, file=fNameMatrixSortedHap, quote = F, row.names = F, col.names = T, sep="\t")
+  if (is.matrix(finalHapMatrix)) {
+    
+    #save final haplotype matrix
+    write.table(finalHapMatrix, file=fNameMatrixSortedHap, quote = F, row.names = F, col.names = T, sep="\t")
+    
+  } else {
+    
+    write.table(t(as.matrix(finalHapMatrix)), file=fNameMatrixSortedHap, quote = F, row.names = F, col.names = T, sep="\t")
+   
+    
+  }
   
 }
 
