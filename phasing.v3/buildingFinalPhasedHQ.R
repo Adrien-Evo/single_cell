@@ -6,7 +6,7 @@ pathToOutputFolder <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/
 pathToFinalHapMerging <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHapMerging_chr10_HQ25_10_5_Jan29"
 fileNames <- list.files(pathToScratch, pattern="*.txt", full.names=TRUE)
 
-for (file in 1:length(fileNames)) {
+for (file in 7:length(fileNames)) {
   
   #file <- 6
   sufixHQ_HQmatrix <- "HQhapMatrix25_NbCells10_NbLinks5"
@@ -19,10 +19,15 @@ for (file in 1:length(fileNames)) {
   namesHQHQ_m <- scan(paste(pathToHQHQ_m, paste(idTag, chrTag, sufixHQ_HQmatrix, "txt", sep = "."), sep = "/"), what = numeric(), nlines = 1)
   colnames(openHQHQ_m) <- namesHQHQ_m
   
-  openMatrix <- read.table(fileNames[file], header = T)
+  openMatrix <- read.table(fileNames[file], header = F)
   hapList <- creatingHapList(openHQHQ_m)
-  #computing distances with gower 
-  d <- daisy(openMatrix[,2:ncol(openMatrix)], metric = "gower")
+  #computing distances with gower
+  if (ncol(openMatrix) == 2) {
+    d <- daisy(matrix(openMatrix[,2:ncol(openMatrix)]), metric = "gower")    
+  } else {
+    d <- daisy(openMatrix[,2:ncol(openMatrix)], metric = "gower")    
+  }
+
   #replacing the NA entries in the distances by 0.5
   d[is.na(d)] <- 0.5
   #identifying clusters
