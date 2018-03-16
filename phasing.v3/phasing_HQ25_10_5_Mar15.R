@@ -2,7 +2,7 @@
 args = commandArgs(trailingOnly=TRUE)
 
 #including functions
-pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/scriptsPhasing"
+pathToScratch <- "/.mounts/labs/awadallalab/scratch/ialves/wgs_sc"
 
 source(paste(pathToScratch,"/functions_v2/computingLinks_functions.v2.R", sep=""))
 source(paste(pathToScratch,"/functions_v2/subsettingLinksMatrix_function.v2.R", sep=""))
@@ -54,7 +54,7 @@ dir.create(folderName)
 pathToTmp <- paste(folderName,"tmp", sep="/") #added by March 2
 dir.create(pathToTmp) #added by March 2
 #FILE NAMES
-prefox <- paste(pathToScratch, "/", indId, ".genotypeMatrix.", chr, ".", sep="")
+prefox <- paste0("/.mounts/labs/awadallalab/scratch/SingleCell/vcfs_sc/allSamples", "/", indId, "/", indId, ".SingleCellsHetSNPs.", chr)
 #log file containing info on the main function
 mainOutput <- paste(folderName, "/", indId, ".", chr, ".mainLogFile_HQ", minHQCells, "_NbCells", minNbCells, "_NbLinks",minNbLinks, ".log", sep="")
 cat("", file=mainOutput, sep="")
@@ -82,8 +82,8 @@ LQ_HQ_matrixFile <- paste(folderName, "/", indId, ".",chr, ".LQvar_HQhap_matrix_
 
 #opening geno and genoq files generated from subsetting the SC vcf file by extracting hetSNPsList of sites
 cat("Opening genomic matrices...", file=mainOutput, sep="\n", append = T)
-openGeno <- data.frame(read.table(paste(prefox, "geno", sep=""), header = F, na.strings = "."))
-openGenoq <- data.frame(read.table(paste(prefox, "genoq", sep=""), header = F, na.strings = "."))
+openGeno <- data.frame(read.table(paste0(prefox, ".GT.FORMAT"), header = T, na.strings = "."))
+openGenoq <- data.frame(read.table(paste0(prefox, ".GQ.FORMAT"), header = T, na.strings = "."))
 
 #keeping positions column
 #hetSNPsPos <- openHetSNPs[,2]
@@ -94,7 +94,7 @@ nbOfCellCovPerSite <- unlist(lapply(1:nrow(openGeno), function(x) { sum(!is.na(o
 #hist(nbOfCellCovPerSite)
 nbOfSitesPerCell <- unlist(lapply(3:ncol(openGeno), function(x) { sum(!is.na(openGeno[,x])) }))
 # #hist(nbOfSitesPerCell)
-quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.975))
+quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.975)) #changed by March15
 # #hist(nbOfSitesPerCell[which(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2])])
 rmCells <- which(!(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2]))
 openGeno <- openGeno[,-rmCells]
@@ -179,7 +179,7 @@ if (exportMatPhaseONe == T) {
   } else {
     
     write.table(t(as.matrix(finalHapMatrix)), file=fNameMatrixSortedHap, quote = F, row.names = F, col.names = T, sep="\t")
-   
+    
     
   }
   
@@ -196,7 +196,7 @@ if (exportMatPhaseONe == T) {
 minHQCells <- 10
 minNbCells <- 4
 minNbLinks <- 2 
- 
+
 #COMMENT
 cat("LQvar-HQhaplotype links will be done with the following QC: ", file=mainOutput, sep="\n", append = T)
 cat(paste("Number of cells with variant genotyped at GQ > 20: ", minHQCells, ".", sep = ""), file=mainOutput, sep="\n", append = T)
@@ -207,7 +207,7 @@ varInHQhaps <- namesHapList
 rm(namesHapList)
 #COMMENT
 cat("Creating cluster for LQ-HQhap links computation...", file=mainOutput, sep="\n", append = T)
- 
+
 #initializing cluster
 LQ_HQ_links_list <- list()
 #openGenoq, openGeno, varNames, outputLQPhasing, minHQCells
@@ -215,11 +215,11 @@ LQ_HQ_links_list <- mclapply(varNames, function(x) { subsettingByQuality_computi
 #change from varNames to varNames-HQvar
 #COMMENT
 cat("LQvar-HQhap links computation... DONE.", file=mainOutput, sep="\n", append = T)
- 
+
 #-- NEW OCT 25
 #COMMENT
 cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
- 
+
 links_and_order_List <- list()
 links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores)
 #COMMENT
@@ -230,7 +230,7 @@ cat(paste0("Links and order list size in bytes is: ", object.size(links_and_orde
 
 #---
 if (exportLQLinksTbl) {
-
+  
   #merge matrices over all the LQ var into a single matrix
   subMatrix <- do.call(rbind, (lapply(links_and_order_List, "[[", 1))) #modified by Oct 26
   #subOrder <- do.call(rbind, (lapply(links_and_order_List, "[[", 2))) #modified by Oct 26
@@ -243,7 +243,7 @@ if (exportLQLinksTbl) {
   #COMMENT
   cat("Exporting matrix with supported LQvar-HQvar links.", file=mainOutput, sep="\n", append = T)
   write.table(subMatrix, file=phaseTwoLinksOutput, quote = F, row.names = F, col.names = T, sep="\t")
-
+  
 }
 rm(LQ_HQ_links_list) #modified by Oct 25 
 # ##########################
@@ -252,7 +252,7 @@ rm(LQ_HQ_links_list) #modified by Oct 25
 # ###########################
 #COMMENT
 cat("Building up LQvar-HQhap connection.", file=mainOutput, sep="\n", append = T)
- 
+
 #computing the abs number of closer haplotypes
 nbOfCloserHQhap <- round(length(hapList)*propHQhaps, digits = 0)
 if (nbOfCloserHQhap == 0) { #in case the nb of HQhaps is too small and/or the chosen prop.
