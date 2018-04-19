@@ -15,7 +15,7 @@ source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v3.R", sep=""))
 #library(Rmpi)
 library(parallel)
 #dateToday <- "TODAY"
-dateToday <- "Mar28"
+dateToday <- "Apr19"
 nbOfCores <- 10L
 
 #chromosome
@@ -126,18 +126,18 @@ HQ_m <- openGeno[which(lengthHQ >= minHQCells),] #replace 25 by minHQCells
 #COMMENT
 cat("Creating cluster for HQ phasing...", file=mainOutput, sep="\n", append = T)
 
-listLinks <- list()
+links_and_order_tmp <- list()
 #creating a file with the links and corresponding counts
 #this file "linksOutput" is required for step 2 below
 #computingLinks <- function(tmpSite, listOfVar, HQ_genotypeMatrix, outFileName) 
-listLinks <- mclapply(HQvarNames, function(x) { computingLinks(tmpSite=x, listOfVar=HQvarNames, HQ_genotypeMatrix=HQ_m, outFileName=outputPhaseOne) }, mc.cores = nbOfCores)
+links_and_order_tmp <- mclapply(HQvarNames, function(x) { computingLinks(tmpSite=x, listOfVar=HQvarNames, HQ_genotypeMatrix=HQ_m, link_r = HQ_ratio, outFileName=outputPhaseOne) }, mc.cores = nbOfCores) #changed April 19
 #COMMENT
 cat("HQ phasing... DONE.", file=mainOutput, sep="\n", append = T)
 
-listLinks <- listLinks[which(sapply(listLinks, length) > 1)] #modified by Nov 27
-
-links_and_order_tmp <- list()
-links_and_order_tmp <- mclapply(listLinks, function(x) {  subsettingLinksMatrix(x, HQ_ratio)}, mc.cores = nbOfCores)
+# listLinks <- listLinks[which(sapply(listLinks, length) > 1)] #modified by Nov 27
+# 
+# 
+# links_and_order_tmp <- mclapply(listLinks, function(x) {  subsettingLinksMatrix(x, HQ_ratio)}, mc.cores = nbOfCores)
 
 # fullHQlinksComb <- data.frame()
 # fullHQlinksComb <- do.call(rbind, listLinks[which(sapply(listLinks, length) > 1)]) #removed by Nov 27
@@ -204,24 +204,27 @@ cat(paste("Number of cells covering each LQvar-varWithinHQhap combination: ", mi
 cat(paste("Number of cells covering each LQvar-varWithinHQhap pairwise combination of alleles: ", minNbLinks, ".", sep = ""), file=mainOutput, sep="\n", append = T)
 # 
 varInHQhaps <- namesHapList
+varOutHQhaps <- setdiff(varNames, sort(as.numeric(varInHQhaps), decreasing = F)) #added by Apr 4
 rm(namesHapList)
 #COMMENT
 cat("Creating cluster for LQ-HQhap links computation...", file=mainOutput, sep="\n", append = T)
 
 #initializing cluster
-LQ_HQ_links_list <- list()
+#LQ_HQ_links_list <- list()
+links_and_order_List <- list()
 #openGenoq, openGeno, varNames, outputLQPhasing, minHQCells
-LQ_HQ_links_list <- mclapply(varNames, function(x) { subsettingByQuality_computingLQLinks(tmpLQSite=x, varNamesInHQhaps=varInHQhaps, outLog=LQlinksLog) }, mc.cores = nbOfCores)
+#changed by Apr 4
+links_and_order_List <- mclapply(varOutHQhaps, function(x) { subsettingByQuality_computingLQLinks(tmpLQSite=x, varNamesInHQhaps=varInHQhaps, ratio=LQ_ratio, outLog=LQlinksLog) }, mc.cores = nbOfCores)
 #change from varNames to varNames-HQvar
 #COMMENT
 cat("LQvar-HQhap links computation... DONE.", file=mainOutput, sep="\n", append = T)
 
 #-- NEW OCT 25
+#-- CHANGED APRIL 4
 #COMMENT
-cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
-
-links_and_order_List <- list()
-links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores)
+#cat("Creating cluster for subsetting LQ-HQhap links per LQvar matrices...", file=mainOutput, sep="\n", append = T)
+# links_and_order_List <- list()
+# links_and_order_List <- mclapply(LQ_HQ_links_list, function(x) {  subsettingLinksMatrix(x, LQ_ratio)}, mc.cores = nbOfCores)
 #COMMENT
 cat("Subsetting and ordering of LQ-HQhap links per LQvar matrices... DONE.", file=mainOutput, sep="\n", append = T)
 links_and_order_List <- links_and_order_List[!sapply(links_and_order_List, is.null)] #modified by Oct 26

@@ -13,6 +13,7 @@ subsettingLinksMatrix <- function(PC_tbl, r) { #local variable: PC_tbl = matrix 
       
       #subsetting the original table with pwise Comb counts
       matrix_counts_links_ltTWO <- PC_tbl[vvv,]
+      rm(PC_tbl) #added April 4
       
       #computing a table with the link count order 2,3,4,1 means that the hights nb of counts if in column 2 and 3
       order_m <- t(apply(matrix_counts_links_ltTWO[,4:7],1, function(o) { order(o, decreasing = T) })) #order of the most prevalent links among sites in vvv
