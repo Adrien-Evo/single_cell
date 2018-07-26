@@ -1,14 +1,14 @@
 require(cluster)
 
-pathToScratch <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/LQvar_HQhap_table_chr10_HQ25_10_5_Mar1"
-pathToHQHQ_m <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/HQhap_matrix_chr10_HQ25_10_5_Mar1"
-pathToOutputFolder <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHaps_chr10_HQ25_10_5_Mar1"
-pathToFinalHapMerging <- "C:/Users/ialves/Dropbox/singleCellProject/phasing_donors/finalHapMerging_chr10_HQ25_10_5_Jan29"
+pathToScratch <- "/Users/isabelalves/Dropbox/singleCellProject/phasing_donors/wgs_SC_phasing/LQ_HQvar_m_chr21"
+pathToHQHQ_m <- "/Users/isabelalves/Dropbox/singleCellProject/phasing_donors/wgs_SC_phasing/hapList_chr21"
+pathToOutputFolder <- "/Users/isabelalves/Dropbox/singleCellProject/phasing_donors/wgs_SC_phasing"
+pathToFinalHapMerging <- "/Users/isabelalves/Dropbox/singleCellProject/phasing_donors/wgs_SC_phasing"
 fileNames <- list.files(pathToScratch, pattern="*.txt", full.names=TRUE)
 
-for (file in 7:length(fileNames)) {
+for (file in 1:length(fileNames)) {
   
-  #file <- 6
+  file <- 4
   sufixHQ_HQmatrix <- "HQhapMatrix25_NbCells10_NbLinks5"
   sufixPhasedHap <- "finalHapNeighborHaps_HQ25_NbCells10_NbLinks5"
   idTag <- unlist(strsplit(unlist(strsplit(fileNames[file], split = "/"))[length(unlist(strsplit(fileNames[file], split = "/")))], split="\\."))[1]
@@ -21,6 +21,10 @@ for (file in 7:length(fileNames)) {
   
   openMatrix <- read.table(fileNames[file], header = F)
   hapList <- creatingHapList(openHQHQ_m)
+  propInfVar <- apply(openMatrix[,2:ncol(openMatrix)], 2, function(x) {sum(!is.na(x))})
+  indx_HQhaps_rm <- which(propInfVar >= (nrow(openMatrix)*0.10))
+  hapList <- hapList[indx_HQhaps_rm]
+  openMatrix <- openMatrix[,c(1,(indx_HQhaps_rm+1))]
   #computing distances with gower
   if (ncol(openMatrix) == 2) {
     d <- daisy(matrix(openMatrix[,2:ncol(openMatrix)]), metric = "gower")    
@@ -34,7 +38,7 @@ for (file in 7:length(fileNames)) {
   clusters <- hclust(d)
   
   countClusters <- 2
-  while (countClusters < 15) {
+  while (countClusters < 100) {
       
     #retrieving indexes of the rows belonging to each cluster
     indx <- cutree(clusters, countClusters)
@@ -44,7 +48,7 @@ for (file in 7:length(fileNames)) {
     cluster_id <- as.numeric(sort(names(t_indx)[order(t_indx, decreasing = T)[1:2]]))
     
     if (t_indx[cluster_id[1]]/t_indx[cluster_id[2]] < 2) {
-      #retrieving the largest configuration tag for each HQ haplotype within a cluster
+      #retrieving the largest configuration tag for each HQ haplotype within a cluster    
       l_config_one <- unlist(lapply(2:ncol(openMatrix), FUN = hapConf, cluster=cluster_id[1]))
       l_config_two <- unlist(lapply(2:ncol(openMatrix), FUN = hapConf, cluster=cluster_id[2]))
       
@@ -52,6 +56,7 @@ for (file in 7:length(fileNames)) {
         
         config_haps_one <- c(0,slideFunct(as.numeric(names(l_config_one)),1,1))
         config_haps_two <- c(0,slideFunct(as.numeric(names(l_config_two)),1,1))
+
         if (sum(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { !is.element(x[1], x[2])})) == 0) {
           cat(paste0("Number of clusters found: ", countClusters, "."), sep = "\n")
           break;
@@ -62,10 +67,28 @@ for (file in 7:length(fileNames)) {
           cat(paste0("Number of clusters found: ", countClusters, "."), sep = "\n")
           break;
         }
-      }
+      }        
     }
-    countClusters <- countClusters+1 
-  }
+    countClusters <- countClusters+1
+    if (countClusters == 100 & t_indx[cluster_id[1]]/t_indx[cluster_id[2]] < 2) {
+      
+      while (sum(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { !is.element(x[1], x[2])})) != 0) {
+        to_rm_indx <- which(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { !is.element(x[1], x[2])}))
+        config_haps_one <- config_haps_one[-to_rm_indx]
+        config_haps_two <- config_haps_two[-to_rm_indx]
+        l_config_one <- l_config_one[-to_rm_indx]
+        l_config_two <- l_config_two[-to_rm_indx]
+      }
+      if (sum(apply(m <- rbind(config_haps_one, config_haps_two), 2, function(x) { !is.element(x[1], x[2])})) == 0) {
+        cat(paste0("Number of clusters found: ", countClusters, "."), sep = "\n")
+      } 
+      
+    } else if (countClusters == 100 & t_indx[cluster_id[1]]/t_indx[cluster_id[2]] > 2) { #100 and yet the first and 2nd elements are not of similar size
+      
+      cat(paste0("Number of clusters found: 0."), sep = "\n")
+      
+    }
+  } #end of while 
   
   if (length(l_config_one) > 1) { # >1 HQ haplotype
     
@@ -110,7 +133,7 @@ for (file in 7:length(fileNames)) {
       
       #merging the LQvar in the third cluster
       #apply(m <- rbind(varLQ[which(!is.na(varLQ))], as.numeric(names(l_config_two[which(!is.na(varLQ))]))), 2, function(x) { is.element(x[1], x[2])})
-  
+
     } else { #major clusters DO NOT match
       
       cat("ERROR: The detected major clusters do not match." , sep = "\n")
@@ -155,33 +178,33 @@ for (file in 7:length(fileNames)) {
       
     }
       
-  }
+  } #end of phasing by clustering
     
-  
-  oldPhasing <- read.table(paste0(pathToFinalHapMerging, "/", paste(idTag, chrTag, sufixPhasedHap,"txt", sep = ".")), header = T)   
-  colnames(oldPhasing) <- scan(paste0(pathToFinalHapMerging, "/", paste(idTag, chrTag, sufixPhasedHap,"txt", sep = ".")), what = numeric(), nlines = 1)
-  cat(paste0("Number of phased sites OLD: ", ncol(oldPhasing), " ."), sep = "\n")  
-  cat(paste0("Number of phased sites CLUSTERING: ", ncol(o_phasedHQhaplotypes), " ."), sep = "\n")
-  
-  subset_oldPhasing <- oldPhasing[ ,intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing))]
-  subset_o_phasedHQhaplotypes <- o_phasedHQhaplotypes[ ,intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing))]
-  
-  similarityProp <- sum(apply(m <- rbind(subset_o_phasedHQhaplotypes[which(subset_o_phasedHQhaplotypes[,1] == 0),], subset_oldPhasing[which(subset_oldPhasing[,1] == 0),]), 2, function(x) { is.element(x[1], x[2])}))/length(intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing)))
-  
-  if (similarityProp > 0.9) {
-    
-    cat("The clustering methods is fully compatible with the merging method.", sep = "\n")
-    
-  } else if (similarityProp < 0.1) {
-    
-    cat("The clustering methods is fully compatible with the merging method.", sep = "\n")
-    
-  } else if (similarityProp > 0.1 & similarityProp < 0.9) {
-    
-    cat("ERROR: The clustering methods is not fully compatible with the merging method.", sep = "\n")
-  
-  }
-
+# #Comparing with the previous phasing  
+#   oldPhasing <- read.table(paste0(pathToFinalHapMerging, "/", paste(idTag, chrTag, sufixPhasedHap,"txt", sep = ".")), header = T)   
+#   colnames(oldPhasing) <- scan(paste0(pathToFinalHapMerging, "/", paste(idTag, chrTag, sufixPhasedHap,"txt", sep = ".")), what = numeric(), nlines = 1)
+#   cat(paste0("Number of phased sites OLD: ", ncol(oldPhasing), " ."), sep = "\n")  
+#   cat(paste0("Number of phased sites CLUSTERING: ", ncol(o_phasedHQhaplotypes), " ."), sep = "\n")
+#   
+#   subset_oldPhasing <- oldPhasing[ ,intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing))]
+#   subset_o_phasedHQhaplotypes <- o_phasedHQhaplotypes[ ,intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing))]
+#   
+#   similarityProp <- sum(apply(m <- rbind(subset_o_phasedHQhaplotypes[which(subset_o_phasedHQhaplotypes[,1] == 0),], subset_oldPhasing[which(subset_oldPhasing[,1] == 0),]), 2, function(x) { is.element(x[1], x[2])}))/length(intersect(colnames(o_phasedHQhaplotypes),colnames(oldPhasing)))
+#   
+#   if (similarityProp > 0.9) {
+#     
+#     cat("The clustering methods is fully compatible with the merging method.", sep = "\n")
+#     
+#   } else if (similarityProp < 0.1) {
+#     
+#     cat("The clustering methods is fully compatible with the merging method.", sep = "\n")
+#     
+#   } else if (similarityProp > 0.1 & similarityProp < 0.9) {
+#     
+#     cat("ERROR: The clustering methods is not fully compatible with the merging method.", sep = "\n")
+#   
+#   }
+rm(list = setdiff(setdiff(ls(), c("pathToScratch", "pathToHQHQ_m", "pathToOutputFolder","pathToFinalHapMerging","fileNames")), lsf.str()))
 }
 ######################
 ##
@@ -225,7 +248,7 @@ convertHapList <- function(x) {
 # retrieving configuration of HQ haplotypes within the major clusters
 hapConf <- function(x, cluster) { #GLOBAL variable: openMatrix,indx,cluster_id
   
-  l_one <- table(openMatrix[which(indx==cluster_id[cluster]), x])
+  l_one <- table(openMatrix[which(indx==cluster), x])
 
   if (length(l_one) > 1) {
     
@@ -243,8 +266,6 @@ hapConf <- function(x, cluster) { #GLOBAL variable: openMatrix,indx,cluster_id
 }
 ##-------
 #----
-
-
 slideFunct <- function(data, window, step){
   total <- length(data)
   spots <- seq(from=1, to=(total-window), by=step)
