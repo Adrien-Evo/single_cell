@@ -14,14 +14,14 @@ source(paste(pathToScratch,"/functions_v2/creatingHapByMerging.v3.R", sep=""))
 .libPaths( c("/.mounts/labs/awadallalab/private/flamaze/R_packages", .libPaths() ) )
 #library(Rmpi)
 library(parallel)
-#dateToday <- "TODAY"
-dateToday <- "Apr19"
+dateToday <- args[2]
+#dateToday <- "Apr19"
 nbOfCores <- 10L
 
 #chromosome
-chr <- "chr21"
+chr <- args[3]
 #ind ID
-indId <- "S172"
+indId <- args[1]
 
 #HQ ratio difference to accept link
 HQ_ratio <- 5
@@ -94,7 +94,7 @@ nbOfCellCovPerSite <- unlist(lapply(1:nrow(openGeno), function(x) { sum(!is.na(o
 #hist(nbOfCellCovPerSite)
 nbOfSitesPerCell <- unlist(lapply(3:ncol(openGeno), function(x) { sum(!is.na(openGeno[,x])) }))
 # #hist(nbOfSitesPerCell)
-quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.975)) #changed by March15
+quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.85)) #changed by March15
 # #hist(nbOfSitesPerCell[which(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2])])
 rmCells <- which(!(nbOfSitesPerCell > quant95[1] & nbOfSitesPerCell < quant95[2]))
 openGeno <- openGeno[,-rmCells]
