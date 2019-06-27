@@ -1,1 +1,17 @@
+The set of scripts in this folder were developed to infer recombination breakpoints from hundreds of single sperm cells, 
+each sequenced at very low coverage, and the corresponding high coverage (>15x) WGS of the donor. 
+
+
+
+
+The inference of recombination breakpoints from SC involves three steps:
+
+1) generating input files (GT output files from vcftools)
+
+2) running the phasing of parental chromosomes from the multiple SCs (longest part)
+
+3) comparing the phased parental chromosomes with each single cell (rough estimation no HMM)
+
+4) running an HMM model to identify the breakpoints by taking into account error rates
+
 
