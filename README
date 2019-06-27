@@ -1,7 +1,9 @@
 The set of scripts in this folder were developed to infer recombination breakpoints from hundreds of single sperm cells, 
 each sequenced at very low coverage, and the corresponding high coverage (>15x) WGS of the donor. 
 
-
+The bulk of single sperm cells is used both to phase the parental genome and infer the recombination breakpoints of each single
+cell. The WGS of the donor is required to know with confidence the set of heterozygous sites per chromosome to be phased by 
+using the (haploid) sperm cells. 
 
 
 The inference of recombination breakpoints from SC involves three steps:
