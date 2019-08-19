@@ -68,6 +68,13 @@ if (badCellsRmved == T) {
   varNames <- openGeno[,2]
   openGeno <- openGeno[,-c(1,2)]
   
+  ## the following commands intend to remove positions for which it was found an * in the ALT field of the vcf
+  ##added by August 19, 2019
+  var_with_del <- which(apply(openGeno, 1, function(x) { sum(x == 2, na.rm=T) }) > 0)
+  openGeno <- openGeno[-var_with_del,]
+  varNames <- varNames[-var_with_del]
+  ##------------ end of new lines. This needs to pass to the script doing the phasing
+  
   nbOfSitesPerCell <- unlist(lapply(1:ncol(openGeno), function(x) { sum(!is.na(openGeno[,x])) }))
   #hist(nbOfSitesPerCell)
   quant95 <- quantile(nbOfSitesPerCell, probs=c(0.025, 0.85))
@@ -79,6 +86,13 @@ if (badCellsRmved == T) {
   
   varNames <- openGeno[,2]
   openGeno <- openGeno[,-c(1,2)]
+
+  ## the following commands intend to remove positions for which it was found an * in the ALT field of the vcf
+  ##added by August 19, 2019
+  var_with_del <- which(apply(openGeno, 1, function(x) { sum(x == 2, na.rm=T) }) > 0)
+  openGeno <- openGeno[-var_with_del,]
+  varNames <- varNames[-var_with_del]
+  ##------------ end of new lines. This needs to pass to the script doing the phasing
   
 }
 
