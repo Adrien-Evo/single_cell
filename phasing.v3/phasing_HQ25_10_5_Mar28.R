@@ -23,6 +23,19 @@ chr <- args[3]
 #ind ID
 indId <- args[1]
 
+##lines added by Aug 21, 2019
+##this was done to take into account the name of the folder where the SC vcfs
+##containing the intersecting sites are.  
+if (indId == "S172") {
+  folderId <- "S172_AD367"
+} else if (indId == "S178") {
+  folderId <- "S178_AD364"
+} else {
+  folderId <- indId
+}
+  
+##-- end of added lines
+
 #HQ ratio difference to accept link
 HQ_ratio <- 5
 #LQ ratio difference to accept link
@@ -54,7 +67,7 @@ dir.create(folderName)
 pathToTmp <- paste(folderName,"tmp", sep="/") #added by March 2
 dir.create(pathToTmp) #added by March 2
 #FILE NAMES
-prefox <- paste0("/.mounts/labs/awadallalab/scratch/SingleCell/vcfs_sc/allSamples", "/", indId, "/", indId, ".SingleCellsHetSNPs.", chr)
+prefox <- paste0("/.mounts/labs/awadallalab/scratch/SingleCell/vcfs_sc/allSamples", "/", folderId, "/", indId, ".SingleCellsHetSNPs.", chr)
 #log file containing info on the main function
 mainOutput <- paste(folderName, "/", indId, ".", chr, ".mainLogFile_HQ", minHQCells, "_NbCells", minNbCells, "_NbLinks",minNbLinks, ".log", sep="")
 cat("", file=mainOutput, sep="")
