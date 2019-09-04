@@ -67,7 +67,7 @@ dir.create(folderName)
 pathToTmp <- paste(folderName,"tmp", sep="/") #added by March 2
 dir.create(pathToTmp) #added by March 2
 #FILE NAMES
-prefox <- paste0("/.mounts/labs/awadallalab/scratch/SingleCell/vcfs_sc/allSamples", "/", folderId, "/", indId, ".SingleCellsHetSNPs.", chr)
+  prefox <- paste0("/.mounts/labs/awadallalab/scratch/SingleCell/vcfs_sc/allSamples", "/", folderId, "/", indId, ".SingleCellsHetSNPs.", chr)
 #log file containing info on the main function
 mainOutput <- paste(folderName, "/", indId, ".", chr, ".mainLogFile_HQ", minHQCells, "_NbCells", minNbCells, "_NbLinks",minNbLinks, ".log", sep="")
 cat("", file=mainOutput, sep="")
