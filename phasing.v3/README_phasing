@@ -1,3 +1,4 @@
 This is a README file containing the description and instructions to run the phasing step.
 
-An example of bash file launching the phasing can be found in:
+An example of bash file launching the phasing can be found in: launching_phasingALLinds.bash
+Basically when calling qsub one needs to set up the number of cores required as the Rscripts paralize some of the functions using the parallel package. 
